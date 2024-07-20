@@ -1,8 +1,8 @@
 # Copyright (c) 2021 Nordic Semiconductor ASA
 # SPDX-License-Identifier: Apache-2.0
 
-identifier: custom_plank
-name: Custom-Plank
+identifier: nrf52840_custom
+name: nrf52840-Custom
 vendor: vendor
 type: mcu
 arch: arm

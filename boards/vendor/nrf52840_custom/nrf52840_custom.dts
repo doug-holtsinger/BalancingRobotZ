@@ -4,12 +4,13 @@
  */
 
 /dts-v1/;
+
 #include <nordic/nrf52840_qiaa.dtsi>
-#include "custom_plank-pinctrl.dtsi"
+#include "nrf52840_custom-pinctrl.dtsi"
 
 / {
-	model = "Custom Plank Board";
-	compatible = "vendor,custom-plank";
+	model = "Custom Board";
+	compatible = "vendor,nrf52840_custom";
 
 	chosen {
 		zephyr,console = &uart0;
