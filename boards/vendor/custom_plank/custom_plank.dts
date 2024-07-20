@@ -27,6 +27,7 @@
 		led-gpios = <&gpio0 13 GPIO_ACTIVE_LOW>;
 		blink-period-ms = <1000>;
 	};
+
 };
 
 &uicr {
@@ -50,3 +51,35 @@
 	pinctrl-1 = <&uart0_sleep>;
 	pinctrl-names = "default", "sleep";
 };
+
+&i2c0 {
+	status = "okay";
+	pinctrl-0 = <&twim_default>;
+	pinctrl-names = "default";
+};
+
+&timer0 {
+	status = "okay";
+};
+
+&rtc0 {
+	status = "okay";
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+};
+
+&flash_controller {
+	status = "okay";
+};
+
+&qdec {
+	status = "okay";
+	pinctrl-0 = <&qdec_default>;
+	pinctrl-names = "default";
+        led-pre = <0>;
+        steps = <100>;
+};
+
