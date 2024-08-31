@@ -1,0 +1,31 @@
+
+#include "pinctrl.dtsi"
+
+/ {
+        chosen {
+                zephyr,console = &rtt0;
+        };
+
+        rtt0: rtt_chan0 {
+                compatible = "segger,rtt-uart";
+                status = "okay";
+        };
+};
+
+&i2c0 {
+    compatible = "nordic,nrf-twi";
+};
+
+&qdec {
+    status = "okay";
+    pinctrl-0 = <&qdec_default>;
+    pinctrl-names = "default";
+    led-pre = <0>;
+    steps = <100>;
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+};
+

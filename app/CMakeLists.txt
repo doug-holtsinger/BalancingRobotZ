@@ -9,4 +9,12 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(app LANGUAGES C)
 
-target_sources(app PRIVATE src/main.c)
+# specify the C++ standard
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+#target_sources(app PRIVATE src/main.c)
+#target_sources(app PRIVATE src/bt_nus.c)
+
+add_subdirectory(src)
+
