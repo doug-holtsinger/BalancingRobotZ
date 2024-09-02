@@ -1,0 +1,53 @@
+# nrfx I2C support
+
+# Copyright (c) 2018, Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig I2C_NRFX
+	bool "nRF TWIX nrfx drivers"
+	default y
+	depends on SOC_FAMILY_NORDIC_NRF
+	depends on MULTITHREADING
+	select PINCTRL
+	help
+	  Enable support for nrfx TWIX drivers for nRF MCU series.
+
+if I2C_NRFX
+
+# Selection of either i2c0 or i2c1 based on device tree
+config HAS_HW_NRF_TWIX0
+        def_bool $(dt_nodelabel_enabled_with_compat,i2c0,$(DT_COMPAT_NORDIC_NRF_TWIX))
+
+config HAS_HW_NRF_TWIX1
+        def_bool $(dt_nodelabel_enabled_with_compat,i2c1,$(DT_COMPAT_NORDIC_NRF_TWIX))
+
+config NRFX_TWI
+        def_bool $(dt_nodelabel_enabled_with_compat,i2c0,$(DT_COMPAT_NORDIC_NRF_TWIX))
+
+# This was the key t get it compiling.
+config NRFX_TWI0
+       def_bool $(dt_nodelabel_enabled_with_compat,i2c0,$(DT_COMPAT_NORDIC_NRF_TWIX))
+
+# Enable TWIX0 or TWIX1 based on above selection
+config I2C_NRFX_TWIX
+	def_bool y
+	depends on DT_HAS_NORDIC_NRF_TWIX_ENABLED
+	select HAS_I2C_RTIO
+	select NRFX_TWIX0 if HAS_HW_NRF_TWIX0
+	select NRFX_TWIX1 if HAS_HW_NRF_TWIX1
+
+#DSH4
+config NRFX_TWIX0
+       bool "dummy"
+       default y 
+       depends on I2C_NRFX_TWIX
+
+config I2C_NRFX_TRANSFER_TIMEOUT
+	int "Transfer timeout [ms]"
+	default 500
+	help
+	  Timeout in milliseconds used for each I2C transfer.
+	  0 means that the driver should use the K_FOREVER value,
+	  i.e. it should wait as long as necessary.
+
+endif # I2C_NRFX
