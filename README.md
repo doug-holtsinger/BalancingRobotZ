@@ -1,129 +1,173 @@
-# nRF Connect SDK example application
- 
-<a href="https://nrfconnect.github.io/ncs-example-application">
-  <img alt="Documentation" src="https://img.shields.io/badge/documentation-3D578C?logo=sphinx&logoColor=white">
-</a>
-<a href="https://nrfconnect.github.io/ncs-example-application/doxygen">
-  <img alt="API Documentation" src="https://img.shields.io/badge/API-documentation-3D578C?logo=c&logoColor=white">
-</a>
+# BalancingRobot
+Balancing Robot
 
-This repository contains an nRF Connect SDK example application. The main
-purpose of this repository is to serve as a reference on how to structure nRF Connect
-SDK based applications. Some of the features demonstrated in this example are:
+Commands to clone repository:
 
-- Basic [Zephyr application][app_dev] skeleton
-- [Zephyr workspace applications][workspace_app]
-- [Zephyr modules][modules]
-- [West T2 topology][west_t2]
-- [Custom boards][board_porting]
-- Custom [devicetree bindings][bindings]
-- Out-of-tree [drivers][drivers]
-- Out-of-tree libraries
-- Example CI configuration (using GitHub Actions)
-- Custom [west extension][west_ext]
-- Doxygen and Sphinx documentation boilerplate
+git clone git@github.com:doug-holtsinger/BalancingRobot.git --recurse-submodules
+git submodule update --init
+git submodule foreach -q --recursive 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'
+git config --global status.submoduleSummary true
 
-This repository is versioned together with the [nRF Connect SDK main tree][sdk-nrf]. This
-means that every time that nRF Connect SDK is tagged, this repository is tagged as well
-with the same version number, and the [manifest](west.yml) entry for `zephyr`
-will point to the corresponding nRF Connect SDK tag. For example, the `ncs-example-application`
-v2.5.0 will point to nRF Connect SDK v2.5.0. Note that the `main` branch always
-points to the development branch of nRF Connect SDK, also `main`.
 
-[app_dev]: https://docs.zephyrproject.org/latest/develop/application/index.html
-[workspace_app]: https://docs.zephyrproject.org/latest/develop/application/index.html#zephyr-workspace-app
-[modules]: https://docs.zephyrproject.org/latest/develop/modules.html
-[west_t2]: https://docs.zephyrproject.org/latest/develop/west/workspaces.html#west-t2
-[board_porting]: https://docs.zephyrproject.org/latest/guides/porting/board_porting.html
-[bindings]: https://docs.zephyrproject.org/latest/guides/dts/bindings.html
-[drivers]: https://docs.zephyrproject.org/latest/reference/drivers/index.html
-[sdk-nrf]: https://github.com/nrfconnect/sdk-nrf
-[west_ext]: https://docs.zephyrproject.org/latest/develop/west/extensions.html
 
-## Getting started
+# WirelessSensor
+Wireless Sensor Hobbyist Project using a Nordic nRF52840 Dongle and a Raspberry Pi computer.  The Nordic chip is attached to an accelerometer, magnetometer and gyroscope, which is used for an AHRS (Attitude and Heading Reference System).  The output from the AHRS is sent over Bluetooth Low Energy (BLE) from the Nordic to the Raspberry Pi where the object orientation is visualized using the Raspberry Pi graphics hardware, and control of the AHRS parameter settings can be interactively changed using a Python-based GUI.
 
-Before getting started, make sure you have a proper nRF Connect SDK development environment.
-Follow the official
-[Installation guide](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation/install_ncs.html).
+# Current State of the Project
 
-### Initialization
+The project is under active development.  The AHRS calibration routines are still very primitive and so the calculated Euler angles are not terribly accurate at this time.  With improvements to the calibration routines I expect much better accuracy.  
 
-The first step is to initialize the workspace folder (``my-workspace``) where
-the ``example-application`` and all nRF Connect SDK modules will be cloned. Run the following
-command:
+The Raspberry Pi3B is able to receive the Euler angles from the Nordic chip over Bluetooth LE, and to visualize the orientation using the Pi graphics by displaying a primitive 3D cube.  The response time is very good.  The calibration and control panel GUI on the Raspberry Pi operates correctly but still needs a lot of improvement.
 
-```shell
-# initialize my-workspace for the ncs-example-application (main branch)
-west init -m https://github.com/nrfconnect/ncs-example-application --mr main my-workspace
-# update nRF Connect SDK modules
-cd my-workspace
-west update
-```
+The IMU is not currently available from Adafruit, however I am looking into adding support for a more readily available IMU with an I2C interface that would have the same or better performance and functionality.
 
-### Building and running
+# Hardware Requirements
 
-To build the application, run the following command:
+1. [Nordic Semiconductor nRF52840 Dongle](https://www.mouser.com/ProductDetail/949-NRF52840-DONGLE)
+2. [Adafruit 4485 -- LSM6DS33 + LIS3MDL - 9 DoF IMU with Accel / Gyro / Mag](https://www.adafruit.com/product/4485) or equivalent
+3. Raspberry Pi3B (may work with other Pis)
+4. Personal computer, Ubuntu Linux or Windows running WSL, with USB-A Connector
+5. Optional: [Adafruit #3309 - CP2104 Friend](https://www.adafruit.com/product/3309) - USB to Serial Converter or equivalent, for Serial Console to Nordic chip.
+6. Optional: liPo Battery for Nordic chip
 
-```shell
-cd example-application
-west build -b $BOARD app
-```
+## Hardware Circuit Diagram
 
-where `$BOARD` is the target board.
+# Software Requirements
 
-You can use the `custom_plank` board found in this repository. Note that you can use
-Zephyr and nRF Connect SDK sample boards if an appropriate overlay is provided (see `app/boards`).
+1. [Nordic Semiconductor nRF52 SDK v17.1.0 or later](https://www.nordicsemi.com/Products/Development-software/nrf5-sdk/download)
+Select s140 Softdevice support.
+2. [Nordic recommended Development IDE](https://infocenter.nordicsemi.com/index.jsp?topic=%2Fug_nrf52840_dk%2FUG%2Fcommon%2Fnordic_tools.html).  One of the following:
+   - [ARM GNU/GCC](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (Recommended for this project, version 9.2 or later).
+   - [SEGGER Embedded Studio (SES)](https://www.segger.com/products/development-tools/embedded-studio/)
+   - [MDK-ARM Keil µVision](https://www2.keil.com/mdk5/uvision/)
+   - [IAR](https://www.iar.com/iar-embedded-workbench/#!?architecture=ARM)
+3. Python3
+4. [BlueZ](http://www.bluez.org/) v5.47 or later
+5. [Bluepy](https://github.com/IanHarvey/bluepy/tree/v/1.3.0) v1.3 or later
 
-A sample debug configuration is also provided. To apply it, run the following
-command:
+The Software development platform I've used for the Nordic Semiconductor Board is an x86 Windows PC running Windows WSL (Windows Subsystem for Linux).  
 
-```shell
-west build -b $BOARD app -- -DOVERLAY_CONFIG=debug.conf
-```
+I have also used [Cygwin](https://www.cygwin.com/) which is a software layer which runs on top of Windows 10/11 and provides functionality similar to a Linux distribution.  You can compile the Nordic Semiconductor source code once you have installed the GNU GCC toolchain (using Cygwin's package manager). It's a very simple way to run Windows and Linux applications on the same box.
 
-Once you have built the application, run the following command to flash it:
+## Software Installation Steps
 
-```shell
-west flash
-```
+Assumes Ubuntu TLS 22.04.04 LTS running under Windows WSL.
 
-### Testing
+## GCC Installation
 
-To execute Twister integration tests, run the following command:
+sudo apt-get install gcc-arm-none-eabi
 
-```shell
-west twister -T tests --integration
-```
+## Nordic SDK Installation
 
-### Documentation
+In the Nordic nRF52 SDK, edit the file 
+components/toolchain/gcc/Makefile.<platform> 
+and change the following Makefile variables to point to your installation 
+and version of the ARM gcc compiler (Linux example shown, Makefile.posix).
 
-A minimal documentation setup is provided for Doxygen and Sphinx. To build the
-documentation first change to the ``doc`` folder:
+GNU_INSTALL_ROOT ?= /usr/bin/
+GNU_VERSION ?= 10.3.1
+GNU_PREFIX ?= arm-none-eabi
 
-```shell
-cd doc
-```
+Edit the location of the Nordic SDK in the WirelessSensor/Sensor/src/Makefile:
 
-Before continuing, check if you have Doxygen installed. It is recommended to
-use the same Doxygen version used in [CI](.github/workflows/docs.yml). To
-install Sphinx, make sure you have a Python installation in place and run:
+SDK_ROOT := /home/<user>/NordicSDK/nRF5_SDK_17.1.0_ddde560
 
-```shell
-pip install -r requirements.txt
-```
+## Nordic Software Compilation and Download
 
-API documentation (Doxygen) can be built using the following command:
+1. cd into the Directory Sensor/src
+2. Type 'make'
+3. Install Nordic firmware onto board using nRF Connect for Desktop via USB or SEGGER debugger
 
-```shell
-doxygen
-```
+## Software Installation for AHRS Console GUI
 
-The output will be stored in the ``_build_doxygen`` folder. Similarly, the
-Sphinx documentation (HTML) can be built using the following command:
+This installation covers Ubuntu 22.04.04 LTS
+Assumes python3.10 is already installed
 
-```shell
-make html
-```
+# Update OS
+sudo apt update
+sudo apt upgrade
 
-The output will be stored in the ``_build_sphinx`` folder. You may check for
-other output formats other than HTML by running ``make help``.
+# Install bluez
+sudo apt-get install bluez
+
+# Install pip for python3.10
+sudo apt-get install python3-pip
+
+# Install glib
+sudo apt-get install libglib2.0-dev
+
+# Install bluepy
+pip install bluepy
+
+# Install tkinter
+sudo apt-get install python3-tk
+
+# Install matplotlib
+pip install matplotlib
+
+# Install PyOpenGL
+sudo apt install python3-opengl
+pip3 install PyOpenGL
+
+# Install pyopengltk
+pip install pyopengltk
+
+# Workaround for PyOpenGL error:
+AttributeError: 'EGLPlatform' object has no attribute 'GLX'. Did you mean: 'GL'?
+
+unset WAYLAND_DISPLAY
+or
+pip3 install --force-reinstall "PyOpenGL==3.1.5"
+
+# to get around problem:
+#  https://github.com/IanHarvey/bluepy/issues/218
+sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+
+#sudo apt install libgles2
+#sudo apt install libgles2-mesa
+#sudo apt install libegl-dev
+
+
+# Software Architecture
+
+# Operation of the AHRS Device
+
+## Calibration and Control GUI on the Raspberry Pi
+
+## Optional Serial Console
+
+## Calibration Procedure
+
+## 3D Orientation Visualization on the Raspberry Pi
+
+# Remaining Improvements:
+1. Refine AHRS calibration
+   - Improve calibration algorithm for accelerometer
+   - remove fixed constants
+   - require less operator intervention to do calibration
+   - Angles take a while to stabilize
+   - use magnetometer to calibrate gyroscope
+   - add support for setting hardware register configuration bits
+2. Fix singularity at North and South Poles, can't get to 90 degree pitch (gimbal lock)
+3. Fix Pitch sign reversal
+4. Further testing
+5. Nordic Timer to drive AHRS to improve accuracy?  sampleFreq needs to be set right.
+6. Re-organize all code
+   - Place devi2c better, why does not work in constructor
+7. BLE code
+   - DFU Over the Air Updates
+   - cleanup BLE code to remove junk
+   - Remove / replace HRS and other remnants
+   - Improve performance, being aware of battery life
+8. Battery Power
+9. Prototype Board 
+10. Calibration Storage, so you don't have to do calibration every time you power on
+components/libraries/fds/fds.h
+11. Add Doyxgen documentation for all code, procedures, and parameters
+12. Add circuit schematic
+13. Add general documentation on the project, algorithms, calibration
+14. Develop Mechanical Test fixture to hold board and measure actual orientation to compare against calculated orientation.
+15. Improve Calibration and Control GUI
+16. Look at adding support for Visual Studio Code
+17. On Server side, look at adding support for Arduino
+18. On Client side, look at adding Android support

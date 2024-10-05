@@ -11,9 +11,15 @@
 #define DEVICE_NAME        CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN        (sizeof(DEVICE_NAME) - 1)
 
+/* Advertising data */
+#define NUM_EULER_ANGLES 3
+#define NUM_MANUFACTURER_DATA (NUM_EULER_ANGLES+1)
+int16_t manufacturer_data[1+NUM_EULER_ANGLES];
+
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
     BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
+    BT_DATA(BT_DATA_MANUFACTURER_DATA, manufacturer_data, sizeof(int16_t) * NUM_MANUFACTURER_DATA)
 };
 
 static const struct bt_data sd[] = {
@@ -43,10 +49,12 @@ struct bt_nus_cb nus_listener = {
     .received = received,
 };
 
-int bt_nus_init(void)
+int ble_svcs_init(void)
 {
-    int err;
-    bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN_ONE_TIME; 
+    int err = 0;
+
+    manufacturer_data[0] = -1;
+    bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN_ONE_TIME;
 
     err = bt_nus_cb_register(&nus_listener, NULL);
     if (err) {
@@ -69,5 +77,23 @@ int bt_nus_init(void)
     printk("Initialization complete\n");
 
     return 0;
+}
+
+/**@brief Function for sending Euler Angles over BLE in the Advertising Channel
+ */
+int ble_svcs_send_euler_angles(int16_t& roll, int16_t& pitch, int16_t& yaw)
+{
+    int err = 0;
+
+    manufacturer_data[1] = roll;
+    manufacturer_data[2] = pitch;
+    manufacturer_data[3] = yaw;
+
+    err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+    if (err) {
+        printk("Failed to update advertising: %d\n", err);
+    }
+
+    return err;
 }
 

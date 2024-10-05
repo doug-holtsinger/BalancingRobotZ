@@ -26,14 +26,14 @@ class MahonyAHRS : public AHRS
 public:
     MahonyAHRS() {}
     ~MahonyAHRS() {}
-    void Update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
+    void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
 #ifdef BLE_CONSOLE_AVAILABLE
     void send_all_client_data(const bool *display_data, const bool settings_display);
 #endif
     void cmd(const IMU_CMD_t cmd);
 
 private:
-    void UpdateIMU(float gx, float gy, float gz, float ax, float ay, float az); 
+    void updateIMU(float gx, float gy, float gz, float ax, float ay, float az); 
 
     float twoKp = twoKpDef;    // 2 * proportional gain (Kp)
     float twoKi = twoKiDef;    // 2 * integral gain (Ki)

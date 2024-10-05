@@ -16,10 +16,10 @@
 
 //---------------------------------------------------------------------------------------------------
 
-void SimpleAHRS::UpdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+void SimpleAHRS::updateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
 }
 
-void SimpleAHRS::Update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
+void SimpleAHRS::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
     float recipNorm;
 
     // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
@@ -35,7 +35,7 @@ void SimpleAHRS::Update(float gx, float gy, float gz, float ax, float ay, float 
     }
 }
 
-void SimpleAHRS::ComputeAngles(float& roll, float& pitch, float& yaw) 
+void SimpleAHRS::compute_angles(float& roll, float& pitch, float& yaw) 
 {
     float arg = ayN;
     pitch = yaw = 0.0;

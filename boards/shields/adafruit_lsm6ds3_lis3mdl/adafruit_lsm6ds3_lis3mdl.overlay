@@ -5,8 +5,8 @@
         reg = <0x1c>;
     };
     lsm6ds3: lsm6ds3@6a {
-        compatible = "st,lsm6dso";
-        friendly-name = "LSM6DSO Accelerometer/Gyroscope";
+        compatible = "st,lsm6ds3tr-c";
+        friendly-name = "LSM6DS3TR-C Accelerometer/Gyroscope";
         reg = <0x6a>;
     };
 };

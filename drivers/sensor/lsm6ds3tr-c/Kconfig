@@ -1,0 +1,12 @@
+menuconfig LSM6DS3TR_C
+	bool "LSM6DS3TR-C I2C accelerometer and gyroscope Chip"
+	default y
+	depends on DT_HAS_ST_LSM6DS3TR_C_ENABLED
+	depends on ZEPHYR_HAL_ST_MODULE
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DS3TR_C),i2c)
+	select HAS_STMEMSC
+	select USE_STDC_LSM6DS3TR_C
+	help
+	  Enable driver for LSM6DS3TR-C accelerometer and gyroscope
+	  sensor.
+

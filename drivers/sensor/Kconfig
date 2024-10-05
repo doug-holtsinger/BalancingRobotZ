@@ -1,0 +1,8 @@
+menuconfig SENSOR
+        bool "Sensor drivers"
+        help
+          Include sensor drivers in system config
+
+if SENSOR
+rsource "lsm6ds3tr-c/Kconfig"
+endif

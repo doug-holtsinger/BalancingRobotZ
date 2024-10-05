@@ -100,7 +100,7 @@ void AHRS::send_all_client_data(const bool *display_data, const bool settings_di
 }
 #endif
 
-void AHRS::ComputeAngles(float& roll, float& pitch, float& yaw) 
+void AHRS::compute_angles(float& roll, float& pitch, float& yaw) 
 {
     // calculate roll in degrees
     float y = q0 * q1 + q2 * q3;

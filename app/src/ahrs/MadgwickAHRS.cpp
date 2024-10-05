@@ -29,7 +29,7 @@
 
 //---------------------------------------------------------------------------------------------------
 // IMU algorithm update
-void MadgwickAHRS::UpdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+void MadgwickAHRS::updateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
 	float recipNorm;
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;
@@ -99,7 +99,7 @@ void MadgwickAHRS::UpdateIMU(float gx, float gy, float gz, float ax, float ay, f
 }
 
 // AHRS algorithm update
-void MadgwickAHRS::Update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
+void MadgwickAHRS::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
 	float recipNorm;
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;
@@ -108,7 +108,7 @@ void MadgwickAHRS::Update(float gx, float gy, float gz, float ax, float ay, floa
 
 	// Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
 	if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
-		UpdateIMU(gx, gy, gz, ax, ay, az);
+		updateIMU(gx, gy, gz, ax, ay, az);
 		return;
 	}
 

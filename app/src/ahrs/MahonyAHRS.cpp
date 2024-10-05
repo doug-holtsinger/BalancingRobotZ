@@ -29,7 +29,7 @@
 //---------------------------------------------------------------------------------------------------
 
 // IMU algorithm update
-void MahonyAHRS::UpdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+void MahonyAHRS::updateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
     float recipNorm;
     float halfvx, halfvy, halfvz;
     float halfex, halfey, halfez;
@@ -96,7 +96,7 @@ void MahonyAHRS::UpdateIMU(float gx, float gy, float gz, float ax, float ay, flo
     q3 *= recipNorm;
 }
 
-void MahonyAHRS::Update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
+void MahonyAHRS::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
     float recipNorm;
     float q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;  
     float hx, hy, bx, bz;
@@ -106,7 +106,7 @@ void MahonyAHRS::Update(float gx, float gy, float gz, float ax, float ay, float 
 
     // Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
     if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
-        UpdateIMU(gx, gy, gz, ax, ay, az);
+        updateIMU(gx, gy, gz, ax, ay, az);
         return;
     }
 
