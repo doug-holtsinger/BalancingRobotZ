@@ -76,7 +76,7 @@ int main(void)
 #endif
 
         imu.update();
-        imu.compute();
+
         imu.get_angles(roll, pitch, yaw);
 
         roll_i = (int16_t)roll;

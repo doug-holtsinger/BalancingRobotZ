@@ -7,6 +7,9 @@
 #ifndef __IMU_CAL_H__
 #define __IMU_CAL_H__
 
+typedef int32_t uncalibrated_t;
+typedef int32_t calibrated_t;
+
 typedef struct {
     int32_t accelerometer_min[3] = {{0}};
     int32_t accelerometer_max[3] = {{0}};
