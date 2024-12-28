@@ -29,3 +29,11 @@
 	pinctrl-0 = <&pwm0_default>;
 };
 
+&lsm6ds3 {
+    accel_pm = <0>;
+    accel_range = <0>;
+    accel_odr = <6>;
+    gyro_pm = <0>;
+    gyro_range = <1>;
+    gyro_odr = <6>;
+};

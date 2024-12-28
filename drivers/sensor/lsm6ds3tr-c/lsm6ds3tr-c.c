@@ -158,6 +158,7 @@ static int lsm6ds3tr_c_accel_odr_set(const struct device *dev, uint16_t freq)
 		return odr;
 	}
 
+	LOG_DBG("accel odr is %d", odr);
 	if (lsm6ds3tr_c_accel_set_odr_raw(dev, odr) < 0) {
 		LOG_DBG("failed to set accelerometer sampling rate");
 		return -EIO;
@@ -178,6 +179,7 @@ static int lsm6ds3tr_c_accel_range_set(const struct device *dev, int32_t range)
 		return fs;
 	}
 
+	LOG_DBG("accel range is %d", fs);
 	if (lsm6ds3tr_c_accel_set_fs_raw(dev, fs) < 0) {
 		LOG_DBG("failed to set accelerometer full-scale");
 		return -EIO;
@@ -214,6 +216,7 @@ static int lsm6ds3tr_c_gyro_odr_set(const struct device *dev, uint16_t freq)
 		return odr;
 	}
 
+	LOG_DBG("gyro odr is %d", odr);
 	if (lsm6ds3tr_c_gyro_set_odr_raw(dev, odr) < 0) {
 		LOG_DBG("failed to set gyroscope sampling rate");
 		return -EIO;
@@ -232,6 +235,7 @@ static int lsm6ds3tr_c_gyro_range_set(const struct device *dev, int32_t range)
 		return fs;
 	}
 
+	LOG_DBG("gyro range is %d", fs);
 	if (lsm6ds3tr_c_gyro_set_fs_raw(dev, fs) < 0) {
 		LOG_DBG("failed to set gyroscope full-scale");
 		return -EIO;
@@ -499,15 +503,9 @@ static int lsm6ds3tr_c_init_chip(const struct device *dev)
 	case 0:
 		lsm6ds3tr_c_xl_power_mode_set(ctx, LSM6DS3TR_C_XL_HIGH_PERFORMANCE);
 		break;
-#if 0
-		///DSH4
 	case 1:
-		lsm6ds3tr_c_xl_power_mode_set(ctx, LSM6DS3TR_C_LOW_NORMAL_POWER_MD);
+		lsm6ds3tr_c_xl_power_mode_set(ctx, LSM6DS3TR_C_XL_NORMAL);
 		break;
-	case 2:
-		lsm6ds3tr_c_xl_power_mode_set(ctx, LSM6DS3TR_C_ULTRA_LOW_POWER_MD);
-		break;
-#endif
 	}
 
 	fs = cfg->accel_range & ACCEL_RANGE_MASK;

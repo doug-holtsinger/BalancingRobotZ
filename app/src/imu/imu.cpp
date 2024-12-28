@@ -2,6 +2,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
+#include <zephyr/logging/log.h>
 
 #include "imu.h"
 #include "imu_cal.h"
@@ -9,6 +10,8 @@
 #include "imu_hw.h"
 #include "notify.h"
 #include "ble_svcs.h"
+
+LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 
 IMU::IMU( const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer):
     dev_accel_gyro(dev_accelerometer_gyroscope),
@@ -50,24 +53,6 @@ int IMU::init()
     return rc;
 }
 
-//  old:
-//       int32_t              int32_t              float
-//       uncalibrated data    calibrated data      AHRS input
-//
-//  next1:  DSH4
-//       float         int32_t              int32_t              float
-//       sensor data   uncalibrated data    calibrated data      AHRS input
-//
-//  next2:
-//       float         float                float                float
-//       sensor data   uncalibrated data    calibrated data      AHRS input
-//
-//  read_sensor (eventually):
-//       int32_t       int32_t              int32_t              float
-//       sensor data   uncalibrated data    calibrated data      AHRS input
-//
-// 
-//
 void IMU::update(void)
 {
     if (!read_sensors())
@@ -94,6 +79,18 @@ void IMU::update(void)
         compute_angles();
     }
 
+}
+
+// convert gauss to milligauss
+float IMU::sensor_gauss_to_mgauss(const struct sensor_value* const val)
+{
+    return (float)val->val1 *1000 + (float)val->val2 / 1000;
+}
+
+// Convert ms2 sensor_value to milli-G value
+int32_t IMU::sensor_ms2_to_mg(const struct sensor_value* const val_ms2)
+{
+    return (int32_t)(sensor_ms2_to_ug(val_ms2) / 1000);
 }
 
 int IMU::read_sensors()
@@ -124,11 +121,12 @@ int IMU::read_sensors()
     }
     sensor_channel_get(dev_magn, SENSOR_CHAN_MAGN_XYZ, magnetometer_sens);
 
+
     for (int i=0 ; i<3 ; i++)
     {
-        accelerometer_uncal[i] = (uncalibrated_t)sensor_value_to_float(&accelerometer_sens[i]);
-        gyroscope_uncal[i] = (uncalibrated_t)sensor_value_to_float(&gyroscope_sens[i]);
-        magnetometer_uncal[i] = (uncalibrated_t)sensor_value_to_float(&magnetometer_sens[i]);
+        accelerometer_uncal[i] = (uncalibrated_t)sensor_ms2_to_mg(&accelerometer_sens[i]);
+        gyroscope_uncal[i] = (uncalibrated_t)sensor_rad_to_10udegrees(&gyroscope_sens[i]);
+        magnetometer_uncal[i] = (uncalibrated_t)sensor_gauss_to_mgauss(&magnetometer_sens[i]);
     }
 
     return rc;
@@ -137,15 +135,15 @@ int IMU::read_sensors()
 void IMU::compute_angles()
 {
     // FIXME -- have AHRS accept sensor values directly
-    AHRSptr->update(gyroscope_cal[0],
-		    gyroscope_cal[1],
-		    gyroscope_cal[2],
-		    accelerometer_cal[0],
-		    accelerometer_cal[1],
-		    accelerometer_cal[2],
-		    magnetometer_cal[0],
-		    magnetometer_cal[1],
-		    magnetometer_cal[2]);
+    AHRSptr->update((float)gyroscope_cal[0],
+		    (float)gyroscope_cal[1],
+		    (float)gyroscope_cal[2],
+		    (float)accelerometer_cal[0],
+		    (float)accelerometer_cal[1],
+		    (float)accelerometer_cal[2],
+		    (float)magnetometer_cal[0],
+		    (float)magnetometer_cal[1],
+		    (float)magnetometer_cal[2]);
 
     AHRSptr->compute_angles(roll, pitch, yaw);
 }
@@ -160,25 +158,40 @@ void IMU::get_angles(float& o_roll, float& o_pitch, float& o_yaw)
 int IMU::set_sampling_freq()
 {
     int rc = 0;
-    struct sensor_value odr_attr;
+    struct sensor_value attr;
 
-    odr_attr.val1 = ACCELEROMETER_ODR;
-    odr_attr.val2 = 0;
-
+    attr.val1 = ACCELEROMETER_ODR;
+    attr.val2 = 0;
     rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ,
-			SENSOR_ATTR_SAMPLING_FREQUENCY, &odr_attr);
+			SENSOR_ATTR_SAMPLING_FREQUENCY, &attr);
     if (rc != 0) {
         return rc;
     }
 
-    odr_attr.val1 = GYROSCOPE_ODR;
-    odr_attr.val2 = 0;
+    sensor_g_to_ms2(ACCELEROMETER_RANGE, &attr);
+    rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ,
+			SENSOR_ATTR_FULL_SCALE, &attr);
+    if (rc != 0) {
+        return rc;
+    }
 
+    attr.val1 = GYROSCOPE_ODR;
+    attr.val2 = 0;
     rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ,
-			SENSOR_ATTR_SAMPLING_FREQUENCY, &odr_attr);
+			SENSOR_ATTR_SAMPLING_FREQUENCY, &attr);
     if (rc != 0) {
         return rc;
     }
+
+    attr.val1 = GYROSCOPE_RANGE;
+    attr.val2 = 0;
+    rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ,
+			SENSOR_ATTR_FULL_SCALE, &attr);
+    if (rc != 0) {
+        return rc;
+    }
+
+
 
     return rc;
 }
@@ -251,7 +264,7 @@ void IMU::calibrate_zero_offset(void)
     for (int i=0 ; i<3 ; i++) {
         if (i == 2)
         {
-            accelerometer_bias = 1000;    // 1G bias in Z direction
+            accelerometer_bias = 1000;    // 1G bias in Z direction in milli-G units
         } else
         {
             accelerometer_bias = 0;
@@ -292,8 +305,8 @@ void IMU::calibrate_data(void)
         {
             gyroscope_cal[i] = 0;
         } else {
-	    // Convert from milldegrees per second to radians per second and apply correction factor.
-            gyroscope_cal[i] = gyroscope_cal_before_correction[i] * cp.gyroscope_correction / ( DEGREES_PER_RADIAN * MILLIDEGREES_PER_DEGREE);
+	    // Convert from 10 microdegrees per second to radians per second and apply correction factor.
+            gyroscope_cal[i] = gyroscope_cal_before_correction[i] * cp.gyroscope_correction / ( DEGREES_PER_RADIAN * MICRO10DEGREES_PER_DEGREE);
 	}
 
         magnetometer_diff = abs(magnetometer_uncal[i] - cp.magnetometer_uncal_last[i]);
@@ -305,7 +318,6 @@ void IMU::calibrate_data(void)
             magnetometer_cal[i] = magnetometer_uncal[i] - ((cp.magnetometer_max[i] + cp.magnetometer_min[i]) / 2);
         }
         cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
-
     }
 }
 

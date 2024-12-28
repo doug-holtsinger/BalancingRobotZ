@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 /* led2 is the Green LED */
 #define LED0_NODE DT_ALIAS(led2)
 #define SLEEP_TIME_MS   1000
-#define DEBUG_LED 1
+// #define DEBUG_LED 1
 
 #ifdef DEBUG_LED
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);

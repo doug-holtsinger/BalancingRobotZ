@@ -19,6 +19,8 @@
 
 #define DEGREES_PER_RADIAN 57.2957795f
 #define MILLIDEGREES_PER_DEGREE 1000
+#define MICRO10DEGREES_PER_DEGREE 100000
+#define MICRODEGREES_PER_DEGREE 1000000
 
 #define NOISE_THRESHOLD_MULTIPLIER 2.0
 #ifndef NOISE_THRESHOLD_MULTIPLIER_ACCELEROMETER
@@ -58,6 +60,8 @@ class IMU {
 
         int read_sensors();
         void compute_angles();
+        int32_t sensor_ms2_to_mg(const struct sensor_value* const val_ms2);
+        float sensor_gauss_to_mgauss(const struct sensor_value* const val);
 
         const struct device *const dev_accel_gyro; 
         const struct device *const dev_magn;
