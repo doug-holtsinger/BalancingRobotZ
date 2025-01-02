@@ -11,6 +11,7 @@
 #include <zephyr/bluetooth/services/nus.h>
 
 #include "imu.h"
+#include "qdec.h"
 #include "ble_svcs.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
@@ -34,8 +35,9 @@ int main(void)
     float roll, pitch, yaw;
     int16_t roll_i, pitch_i, yaw_i;
     IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn));
+    QDEC qdec = QDEC(DEVICE_DT_GET_ONE(nordic_nrf_qdec));
 
-    printk("AHRS Started.\n");
+    LOG_INF("AHRS Started.\n");
 
 #ifdef DEBUG_LED
     if (!gpio_is_ready_dt(&led)) {
@@ -49,6 +51,11 @@ int main(void)
     	return 0;
     }
 #endif
+    ret = qdec.init();
+    if (ret < 0) {
+	LOG_DBG("Failed to initialize QDEC");
+    	return 0;
+    }
 
     ret = ble_svcs_init();
     if (ret < 0) {

@@ -9,7 +9,6 @@
 #include "MahonyAHRS.h"
 #include "MadgwickAHRS.h"
 #include "SimpleAHRS.h"
-#include <zephyr/device.h>
 #include "imu_cal.h"
 
 #ifndef __IMU_H__

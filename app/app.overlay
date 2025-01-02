@@ -21,7 +21,7 @@
     pinctrl-0 = <&qdec_default>;
     pinctrl-names = "default";
     led-pre = <0>;
-    steps = <100>;
+    steps = <830>;
 };
 
 &pwm0 {
