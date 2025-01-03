@@ -22,9 +22,11 @@ LOG_MODULE_REGISTER(BLE, CONFIG_SENSOR_LOG_LEVEL);
 /* Advertising data */
 #define NUM_EULER_ANGLES 3
 #define NUM_MANUFACTURER_DATA (NUM_EULER_ANGLES+1)
-int16_t manufacturer_data[1+NUM_EULER_ANGLES];
-bool notifications_enabled = false;
-bool ble_connected = false;
+#define ADV_INT_MIN 0x01e0 /* 300 ms */
+#define ADV_INT_MAX 0x0260 /* 380 ms */
+static int16_t manufacturer_data[1+NUM_EULER_ANGLES];
+static bool notifications_enabled = false;
+static bool ble_connected = false;
 
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -72,7 +74,17 @@ static void connected(struct bt_conn *conn, uint8_t err)
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
     char addr[BT_ADDR_LE_STR_LEN];
+#if 0
+    bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN_ONE_TIME;
+    int err;
+
     ble_connected = false;
+    err = bt_le_adv_start(bt_adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+    if (err) {
+        LOG_ERR("Failed to start advertising: %d\n", err);
+	return;
+    }
+#endif
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
     LOG_INF("Disconnected: %s (reason %u)", addr, reason);
@@ -88,7 +100,10 @@ int ble_svcs_init(void)
     int err = 0;
 
     manufacturer_data[0] = -1;
-    bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN_ONE_TIME;
+    // bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_OPT_CONNECTABLE;
+    struct bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_PARAM(
+        BT_LE_ADV_OPT_CONNECTABLE, ADV_INT_MIN, ADV_INT_MAX, NULL);
+
     static struct bt_conn_cb conn_callbacks = {
         .connected    = connected,
         .disconnected = disconnected,
