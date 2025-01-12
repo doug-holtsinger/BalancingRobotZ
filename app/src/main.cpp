@@ -13,6 +13,7 @@
 #include "imu.h"
 #include "qdec.h"
 #include "ble_svcs.h"
+#include "app_demux.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
@@ -69,6 +70,33 @@ int main(void)
     	return 0;
     }
 
+    appDemuxRegisterHandler(
+        std::bind( &IMU::cmd, std::ref(imu), std::placeholders::_1),
+        appDemuxCmdType(IMU_CMD_t::CMD_MAX) );
+
+#if 0
+    // Add command handler for Motor Driver
+    appDemuxAddHandler(
+        std::bind( &MotorDriver::cmd, std::ref(md), std::placeholders::_1),
+        appDemuxCmdType(MOTOR_DRIVER_CMD_t::CMD_MAX) );
+
+    // Add command handler for Motor Driver PID
+    appDemuxAddHandler(
+        std::bind( &MotorDriver::PIDCmd, std::ref(md), std::placeholders::_1),
+        appDemuxCmdType(PID_CMD_t::CMD_MAX) );
+
+    // Add command handler for Speed Control PID
+    typedef void (PID<float>::*member_func_ptr)(const APP_CMD_t);
+    member_func_ptr f = (member_func_ptr)&PID<float>::cmd;
+    appDemuxAddHandler(
+        std::bind( f,
+                   std::ref(speedControlPID),
+                   std::placeholders::_1),
+        appDemuxCmdType(PID_CMD_t::CMD_MAX) );
+#endif
+
+    ble_svcs_register(&appDemuxExecHandler);
+
     while (true) {
 
 #ifdef DEBUG_LED
@@ -83,6 +111,7 @@ int main(void)
 #endif
 
         imu.update();
+        imu.send_all_client_data();
 
         imu.get_angles(roll, pitch, yaw);
 

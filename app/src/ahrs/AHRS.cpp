@@ -1,16 +1,13 @@
 
 #include <string.h>
 #include <math.h>
+#include <cstdio>
 
 #include "AHRS.h"
 #include "logdef.h"
 #include "notify.h"
 
-#ifdef BLE_CONSOLE_AVAILABLE
-#include "bsp.h"
-#include "ble_svcs_cmd.h"
 #include "ble_svcs.h"
-#endif
 
 //---------------------------------------------------------------------------------------------------
 // Fast inverse square-root
@@ -34,13 +31,6 @@ float AHRS::invSqrt(float x, bool accurate_calc) {
     return y;
 }
 
-#ifdef BLE_CONSOLE_AVAILABLE
-void AHRS::send_client_data(char *p)
-{
-    uint8_t *p_data = (uint8_t *)p;
-    ble_svcs_send_client_notification(p_data, strlen(p));
-}
-
 void AHRS::send_all_client_data(const bool *display_data, const bool settings_display)
 {
     char s[NOTIFY_PRINT_STR_MAX_LEN];
@@ -54,51 +44,50 @@ void AHRS::send_all_client_data(const bool *display_data, const bool settings_di
     if (display_data[IMU_ACCELEROMETER])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 , ACCELEROMETER_NORMAL, PRINTF_FLOAT_VALUE2(axN), PRINTF_FLOAT_VALUE2(ayN), PRINTF_FLOAT_VALUE2(azN) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
     }
 
     // Gyroscope
     if (display_data[IMU_GYROSCOPE])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT3 , GYROSCOPE_NORMAL_X, PRINTF_FLOAT_VALUE3(gxN) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT3 , GYROSCOPE_NORMAL_Y, PRINTF_FLOAT_VALUE3(gyN) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT3 , GYROSCOPE_NORMAL_Z, PRINTF_FLOAT_VALUE3(gzN) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
     }
 
     // Magnetometer
     if (display_data[IMU_MAGNETOMETER])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 , MAGNETOMETER_NORMAL, PRINTF_FLOAT_VALUE2(mxN), PRINTF_FLOAT_VALUE2(myN), PRINTF_FLOAT_VALUE2(mzN) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
     }
 
     // Quaternion
     if (display_data[IMU_AHRS])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q0, PRINTF_FLOAT_VALUE4(q0X) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q1, PRINTF_FLOAT_VALUE4(q1X) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q2, PRINTF_FLOAT_VALUE4(q2X) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q3, PRINTF_FLOAT_VALUE4(q3X) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
     }
 
     if (settings_display)
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 , SAMPLE_FREQ, PRINTF_FLOAT_VALUE2(sampleFreq) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
     }
 
 }
-#endif
 
 void AHRS::compute_angles(float& roll, float& pitch, float& yaw) 
 {

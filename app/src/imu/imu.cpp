@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
@@ -9,6 +9,7 @@
 #include "imu_cmd.h"
 #include "imu_hw.h"
 #include "notify.h"
+#include "logdef.h"
 #include "ble_svcs.h"
 
 LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
@@ -17,7 +18,7 @@ IMU::IMU( const struct device *const dev_accelerometer_gyroscope, const struct d
     dev_accel_gyro(dev_accelerometer_gyroscope),
     dev_magn(dev_magnetometer)
 {
-    memset(display_data, 0, sizeof(display_data));
+    memset(display_data, true, sizeof(display_data));
 
     memset(noise_threshold_mult, NOISE_THRESHOLD_MULTIPLIER, sizeof(noise_threshold_mult));
     noise_threshold_mult[IMU_ACCELEROMETER] = NOISE_THRESHOLD_MULTIPLIER_ACCELEROMETER;
@@ -53,32 +54,8 @@ int IMU::init()
     return rc;
 }
 
-void IMU::update(void)
+void IMU::params_save()
 {
-    if (!read_sensors())
-    {
-	// FIXME: print error if read_sensors returns non-zero value
-	switch (calibrate_enable)
-	{
-            case IMU_CALIBRATE_DISABLED: 
-                calibrate_data();
-		break;
-	    case IMU_CALIBRATE_ZERO_OFFSET:
-                calibrate_zero_offset();
-		break;
-#if 0
-	    case IMU_CALIBRATE_MAGNETOMETER:
-                calibrate_magnetometer();
-		break;
-	    case IMU_CALIBRATE_GYROSCOPE:
-                calibrate_gyroscope();
-		break;
-#endif
-	    default: break;
-	}
-        compute_angles();
-    }
-
 }
 
 // convert gauss to milligauss
@@ -103,7 +80,10 @@ int IMU::read_sensors()
     {
         return rc;
     }
-    sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ, accelerometer_sens);
+    if (!data_hold[IMU_ACCELEROMETER])
+    {
+        sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ, accelerometer_sens);
+    } 
 
     /* gyro */
     rc = sensor_sample_fetch_chan(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ);
@@ -111,7 +91,10 @@ int IMU::read_sensors()
     {
         return rc;
     }
-    sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ, gyroscope_sens);
+    if (!data_hold[IMU_GYROSCOPE])
+    {
+        sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ, gyroscope_sens);
+    } 
 
     /* magnetometer */
     rc = sensor_sample_fetch_chan(dev_magn, SENSOR_CHAN_ALL);
@@ -119,8 +102,10 @@ int IMU::read_sensors()
     {
         return rc;
     }
-    sensor_channel_get(dev_magn, SENSOR_CHAN_MAGN_XYZ, magnetometer_sens);
-
+    if (!data_hold[IMU_MAGNETOMETER])
+    {
+        sensor_channel_get(dev_magn, SENSOR_CHAN_MAGN_XYZ, magnetometer_sens);
+    }
 
     for (int i=0 ; i<3 ; i++)
     {
@@ -130,29 +115,6 @@ int IMU::read_sensors()
     }
 
     return rc;
-}
-
-void IMU::compute_angles()
-{
-    // FIXME -- have AHRS accept sensor values directly
-    AHRSptr->update((float)gyroscope_cal[0],
-		    (float)gyroscope_cal[1],
-		    (float)gyroscope_cal[2],
-		    (float)accelerometer_cal[0],
-		    (float)accelerometer_cal[1],
-		    (float)accelerometer_cal[2],
-		    (float)magnetometer_cal[0],
-		    (float)magnetometer_cal[1],
-		    (float)magnetometer_cal[2]);
-
-    AHRSptr->compute_angles(roll, pitch, yaw);
-}
-
-void IMU::get_angles(float& o_roll, float& o_pitch, float& o_yaw)
-{
-    o_roll = roll;
-    o_pitch = pitch;
-    o_yaw = yaw;
 }
 
 int IMU::set_sampling_freq()
@@ -196,25 +158,22 @@ int IMU::set_sampling_freq()
     return rc;
 }
 
-void IMU::reset_calibration_threshold(void)
+void IMU::calibrate_magnetometer(void)
 {
-    for (int i = 0 ; i < 3 ; i++)
-    {
-        cp.accelerometer_min_threshold[i] = cp.magnetometer_min_threshold[i] = cp.gyroscope_min_threshold[i] = 0;
-    }
-}
-
-void IMU::reset_calibration(void)
-{
-    // FIXME -- reset AHRS settings, like gyro sensitivity, as well
-    for (int i = 0 ; i < 3 ; i++)
-    {
-        cp.magnetometer_min[i] = cp.magnetometer_max[i] = cp.magnetometer_min_threshold[i] = 0;
-        cp.magnetometer_uncal_last[i] = 0;
-
-        cp.gyroscope_min[i] = cp.gyroscope_max[i] = cp.gyroscope_min_threshold[i] = 0;
-
-        cp.accelerometer_min[i] = cp.accelerometer_max[i] = cp.accelerometer_min_threshold[i] = 0;
+    //
+    //  magnetometer calibration -- done while rotating in X / Y /  Z axis
+    //
+    for (int i = 0 ; i < 3 ; i++) {
+        if (cp.magnetometer_min[i] == 0 && cp.magnetometer_max[i] == 0)
+        {
+            cp.magnetometer_min[i] = cp.magnetometer_max[i] = cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
+        } else if (magnetometer_uncal[i] < cp.magnetometer_min[i])
+        {
+            cp.magnetometer_min[i] = cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
+        } else if (magnetometer_uncal[i] > cp.magnetometer_max[i])
+        {
+            cp.magnetometer_max[i] = cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
+        }
     }
 }
 
@@ -287,6 +246,28 @@ void IMU::calibrate_zero_offset(void)
     }
 }
 
+void IMU::reset_calibration_threshold(void)
+{
+    for (int i = 0 ; i < 3 ; i++)
+    {
+        cp.accelerometer_min_threshold[i] = cp.magnetometer_min_threshold[i] = cp.gyroscope_min_threshold[i] = 0;
+    }
+}
+
+void IMU::reset_calibration(void)
+{
+    // FIXME -- reset AHRS settings, like gyro sensitivity, as well
+    for (int i = 0 ; i < 3 ; i++)
+    {
+        cp.magnetometer_min[i] = cp.magnetometer_max[i] = cp.magnetometer_min_threshold[i] = 0;
+        cp.magnetometer_uncal_last[i] = 0;
+
+        cp.gyroscope_min[i] = cp.gyroscope_max[i] = cp.gyroscope_min_threshold[i] = 0;
+
+        cp.accelerometer_min[i] = cp.accelerometer_max[i] = cp.accelerometer_min_threshold[i] = 0;
+    }
+}
+
 void IMU::calibrate_data(void)
 {
     uint32_t magnetometer_diff = 0;
@@ -321,7 +302,317 @@ void IMU::calibrate_data(void)
     }
 }
 
+void IMU::get_angles(float& o_roll, float& o_pitch, float& o_yaw)
+{
+    o_roll = roll;
+    o_pitch = pitch;
+    o_yaw = yaw;
+}
+
+void IMU::compute_angles()
+{
+    if (ideal_data[IMU_ACCELEROMETER])
+    {
+	float axN, ayN, azN;
+        AHRSptr->GetNormalizedVectors(IMU_ACCELEROMETER, axN, ayN, azN);
+	if ( abs(axN) < 0.1 && abs(ayN) < 0.1 )
+	{
+            accelerometer_cal[X_AXIS] = accelerometer_cal[Y_AXIS] = 0.0f;
+	    if (accelerometer_cal[Z_AXIS] < 0.0)
+	    {
+                accelerometer_cal[Z_AXIS] = -1000.0f;
+	    } else {
+                accelerometer_cal[Z_AXIS] = 1000.0f;
+	    }
+	}
+	if ( abs(ayN) < 0.1 && abs(azN) < 0.1 )
+	{
+            accelerometer_cal[Y_AXIS] = accelerometer_cal[Z_AXIS] = 0.0f;
+	    if (accelerometer_cal[X_AXIS] < 0.0)
+	    {
+                accelerometer_cal[X_AXIS] = -1000.0f;
+	    } else {
+                accelerometer_cal[X_AXIS] = 1000.0f;
+	    }
+	}
+	if ( abs(axN) < 0.1 && abs(azN) < 0.1 )
+	{
+            accelerometer_cal[X_AXIS] = accelerometer_cal[Z_AXIS] = 0.0f;
+	    if (accelerometer_cal[Y_AXIS] < 0.0)
+	    {
+                accelerometer_cal[Y_AXIS] = -1000.0f;
+	    } else {
+                accelerometer_cal[Y_AXIS] = 1000.0f;
+	    }
+	}
+    }
+    if (ideal_data[IMU_GYROSCOPE])
+    {
+        for (int i = 0 ; i < 3 ; i++) 
+	{
+            gyroscope_cal[i] = 0.0f;
+	}
+    }
+    if (ideal_data[IMU_MAGNETOMETER])
+    {
+        for (int i = 0 ; i < 3 ; i++) 
+	{
+            magnetometer_cal[i] = 0.0f;
+	}
+    }
+
+    // FIXME -- have AHRS accept sensor values directly
+    AHRSptr->update((cp.gyroscope_enabled) ? (float)gyroscope_cal[0] : 0.0f,
+		    (cp.gyroscope_enabled) ? (float)gyroscope_cal[1] : 0.0f,
+		    (cp.gyroscope_enabled) ? (float)gyroscope_cal[2] : 0.0f,
+		    (float)accelerometer_cal[0],
+		    (float)accelerometer_cal[1],
+		    (float)accelerometer_cal[2],
+		    (float)magnetometer_cal[0],
+		    (float)magnetometer_cal[1],
+		    (float)magnetometer_cal[2]);
+
+    AHRSptr->compute_angles(roll, pitch, yaw);
+}
+
+void IMU::send_all_client_data()
+{
+    char s[NOTIFY_PRINT_STR_MAX_LEN];
+    uint32_t bit_flags = 0;
+
+    // Check if BLE connected, otherwise return.
+    if ( !ble_svcs_connected() ) {
+            return;
+    }
+
+    // Euler Angles
+    snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMATI PRINTF_FLOAT_FORMATI , EULER_ANGLES, PRINTF_FLOAT_VALUE2(roll), PRINTF_FLOAT_VALUEI(pitch), PRINTF_FLOAT_VALUEI(yaw));
+    send_client_data(s, strlen(s));
+
+    // Accelerometer
+    if (display_data[IMU_ACCELEROMETER])
+    {
+        snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
+             ACCELEROMETER_CAL,
+            (int)accelerometer_cal[0],
+            (int)accelerometer_cal[1],
+            (int)accelerometer_cal[2]
+            );
+        send_client_data(s, strlen(s));
+
+        if (uncalibrated_display)
+        {
+            snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
+                 ACCELEROMETER_UNCAL,
+                (int)accelerometer_uncal[0],
+                (int)accelerometer_uncal[1],
+                (int)accelerometer_uncal[2]
+                );
+            send_client_data(s, strlen(s));
+    
+            snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
+                 ACCELEROMETER_MIN_THRESHOLD,
+                (int)cp.accelerometer_min_threshold[0],
+                (int)cp.accelerometer_min_threshold[1],
+                (int)cp.accelerometer_min_threshold[2]
+                );
+            send_client_data(s, strlen(s));
+        }
+    }
+
+
+    // Gyroscope
+    if (display_data[IMU_GYROSCOPE])
+    {
+        snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 ,
+            GYROSCOPE_CAL,
+            PRINTF_FLOAT_VALUE2(gyroscope_cal[0]),
+            PRINTF_FLOAT_VALUE2(gyroscope_cal[1]),
+            PRINTF_FLOAT_VALUE2(gyroscope_cal[2])
+        );
+        send_client_data(s, strlen(s));
+
+        if (uncalibrated_display)
+        {
+            snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
+                GYROSCOPE_UNCAL,
+                (int)gyroscope_uncal[0],
+                (int)gyroscope_uncal[1],
+                (int)gyroscope_uncal[2]
+                );
+            send_client_data(s, strlen(s));
+    
+            snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT PRINTF_FLOAT_FORMAT PRINTF_FLOAT_FORMAT ,
+                GYROSCOPE_MIN_THRESHOLD,
+                PRINTF_FLOAT_VALUE(cp.gyroscope_min_threshold[0]),
+                PRINTF_FLOAT_VALUE(cp.gyroscope_min_threshold[1]),
+                PRINTF_FLOAT_VALUE(cp.gyroscope_min_threshold[2])
+            );
+            send_client_data(s, strlen(s));
+        }
+    }
+
+
+    if (settings_display)
+    {
+        snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT7 ,
+            GYRO_CORRECTION,
+            PRINTF_FLOAT_VALUE7(cp.gyroscope_correction)
+            );
+        send_client_data(s, strlen(s));
+
+        snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %u", AHRS_ALGORITHM, static_cast<int>(AHRSalgorithm));
+        send_client_data(s, strlen(s));
+
+        snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT ,
+            ACCELEROMETER_NOISE_THRESHOLD_MULT,
+            PRINTF_FLOAT_VALUE(noise_threshold_mult[IMU_ACCELEROMETER]));
+        send_client_data(s, strlen(s));
+
+	// FIXME -- send other noise thresholds for gyro and magnetometer
+
+    }
+
+    if (display_data[IMU_ODR])
+    {
+        snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%u " PRINTF_FLOAT_FORMAT2 ,
+            ODR_HZ_ACCELEROMETER + odr_select,
+            PRINTF_FLOAT_VALUE2(odr_hz[odr_select])
+            );
+        send_client_data(s, strlen(s));
+    }
+
+
+    // Magnetometer
+    if (display_data[IMU_MAGNETOMETER])
+    {
+        snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
+            MAGNETOMETER_CAL,
+            (int)magnetometer_cal[0],
+            (int)magnetometer_cal[1],
+            (int)magnetometer_cal[2]
+            );
+        send_client_data(s, strlen(s));
+
+        if (uncalibrated_display)
+        {
+            snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
+                MAGNETOMETER_UNCAL,
+                (int)magnetometer_uncal[0],
+                (int)magnetometer_uncal[1],
+                (int)magnetometer_uncal[2]
+                );
+            send_client_data(s, strlen(s));
+    
+            snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
+                MAGNETOMETER_MIN_THRESHOLD,
+                (int)cp.magnetometer_min_threshold[0],
+                (int)cp.magnetometer_min_threshold[1],
+                (int)cp.magnetometer_min_threshold[2]
+                );
+            send_client_data(s, strlen(s));
+        }
+    
+    }
+
+    bit_flags |= (cp.magnetometer_stability     ? 1 << MAGNETOMETER_STABILITY : 0);
+    bit_flags |= (cp.gyroscope_enabled          ? 1 << GYROSCOPE_ENABLE : 0);
+    bit_flags |= (data_hold[IMU_ACCELEROMETER]  ? 1 << DATA_HOLD_ACCELEROMETER : 0);
+    bit_flags |= (data_hold[IMU_MAGNETOMETER]   ? 1 << DATA_HOLD_MAGNETOMETER : 0);
+    bit_flags |= (data_hold[IMU_GYROSCOPE]      ? 1 << DATA_HOLD_GYROSCOPE : 0);
+    bit_flags |= (ideal_data[IMU_ACCELEROMETER] ? 1 << IDEAL_DATA_ACCELEROMETER : 0);
+    bit_flags |= (ideal_data[IMU_MAGNETOMETER]  ? 1 << IDEAL_DATA_MAGNETOMETER : 0);
+    bit_flags |= (ideal_data[IMU_GYROSCOPE]     ? 1 << IDEAL_DATA_GYROSCOPE : 0);
+    bit_flags |= (display_data[IMU_AHRS]          ? 1 << DISPLAY_DATA_AHRS: 0);
+    bit_flags |= (display_data[IMU_ACCELEROMETER] ? 1 << DISPLAY_DATA_ACCELEROMETER : 0);
+    bit_flags |= (display_data[IMU_MAGNETOMETER]  ? 1 << DISPLAY_DATA_MAGNETOMETER : 0);
+    bit_flags |= (display_data[IMU_GYROSCOPE]     ? 1 << DISPLAY_DATA_GYROSCOPE : 0);
+    bit_flags |= (uncalibrated_display            ? 1 << UNCALIBRATED_DISPLAY : 0); 
+    bit_flags |= (settings_display                ? 1 << SETTINGS_DISPLAY : 0); 
+    bit_flags |= (ideal_data[IMU_ODR]             ? 1 << IDEAL_DATA_ODR : 0); 
+    bit_flags |= (display_data[IMU_ODR]           ? 1 << DISPLAY_DATA_ODR : 0); 
+
+    snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %u",
+            BIT_FLAGS, bit_flags
+            );
+    send_client_data(s, strlen(s));
+
+    // AHRS sends data to client
+    AHRSptr->send_all_client_data(display_data, settings_display);
+
+}
+
 #if 0
+//FIXME
+void IMU::MeasureODR()
+{
+    bool timestamp_overflow;
+    if (odr_update_cnt == ODR_UPDATE_INTERVAL)
+    {
+        LSM6DS3StatusTypeDef lsm_err_code = AccGyr->Read_Timestamp(&timestamp, &timestamp_overflow);
+        APP_ERROR_CHECK(lsm_err_code);
+        if (timestamp_overflow)
+        {
+            // Reset timestamp
+            LSM6DS3StatusTypeDef lsm_err_code = AccGyr->Reset_Timestamp();
+            APP_ERROR_CHECK(lsm_err_code);
+            odr_update_cnt = 0;
+            timestamp_odr_valid = false;
+        } else if (timestamp_odr_valid)
+        {
+            // FIXME  LSM6DS3 timestamp sometimes runs backwards. Bug?
+            if (timestamp > timestamp_prev)
+            {
+                odr_hz[odr_select] = 1.0f / (SECONDS_PER_TIMER_TICK * (timestamp - timestamp_prev));
+            }
+            odr_update_cnt = 0;
+            timestamp_odr_valid = false;
+            odr_select = odr_select + 1;
+            if (odr_select == 3)
+            {
+                odr_select = 0;
+            }
+        } else {
+            timestamp_prev = timestamp;
+            timestamp_odr_valid = true;
+        }
+    } else {
+        odr_update_cnt++;
+    }
+}
+#endif
+
+void IMU::update(void)
+{
+    if (!read_sensors())
+    {
+	switch (calibrate_enable)
+	{
+            case IMU_CALIBRATE_DISABLED: 
+                calibrate_data();
+		break;
+	    case IMU_CALIBRATE_ZERO_OFFSET:
+                calibrate_zero_offset();
+		break;
+	    case IMU_CALIBRATE_MAGNETOMETER:
+                calibrate_magnetometer();
+		break;
+#if 0
+		//FIXME
+	    case IMU_CALIBRATE_GYROSCOPE:
+                calibrate_gyroscope();
+		break;
+#endif
+	    default: break;
+	}
+        compute_angles();
+    } else
+    {
+        LOG_ERR("Could not read sensors");
+    }
+
+}
+
 void IMU::cmd(const uint8_t i_cmd)
 {
     cmd_internal(static_cast<IMU_CMD_t>(i_cmd));
@@ -349,9 +640,6 @@ void IMU::cmd_internal(const IMU_CMD_t i_cmd)
 	case IMU_CMD_t::SELECT_ODR:
             sensor_select = IMU_ODR;
             break;
-	case IMU_CMD_t::AHRS_INPUT_TOGGLE:
-            show_input_ahrs = ( show_input_ahrs + 1 ) % 4;
-            break;
 	case IMU_CMD_t::SENSOR_CALIBRATE_NORMALIZED:
             calibrate_enable = IMU_CALIBRATE_DISABLED; 
             break;
@@ -371,15 +659,6 @@ void IMU::cmd_internal(const IMU_CMD_t i_cmd)
             break;
 	case IMU_CMD_t::SENSOR_CALIBRATE_SAVE:
             params_save();
-            break;
-	case IMU_CMD_t::AHRS_YAW_TOGGLE:
-            show_yaw = !show_yaw;
-            break;
-	case IMU_CMD_t::AHRS_PITCH_TOGGLE:
-            show_pitch = !show_pitch;
-            break;
-	case IMU_CMD_t::AHRS_ROLL_TOGGLE:
-            show_roll = !show_roll;
             break;
 	case IMU_CMD_t::SENSOR_DATA_HOLD_TOGGLE:
 	    if (sensor_select >= IMU_SENSOR_MIN && sensor_select <= IMU_SENSOR_MAX)
@@ -465,10 +744,10 @@ void IMU::cmd_internal(const IMU_CMD_t i_cmd)
             // Fall through
             AHRSptr->cmd(i_cmd);
             break;
-        default: 
-            NRF_LOG_INFO("Invalid IMU cmd %d", i_cmd);
+        default:
+            LOG_ERR("Invalid IMU cmd %d", static_cast<uint8_t>(i_cmd));
 	    break;
     }
 }
-#endif
+
 

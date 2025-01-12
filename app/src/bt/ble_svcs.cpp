@@ -14,6 +14,8 @@
 #include <zephyr/bluetooth/services/nus.h>
 #include <zephyr/logging/log.h>
 
+#include "app_demux.h"
+
 LOG_MODULE_REGISTER(BLE, CONFIG_SENSOR_LOG_LEVEL);
 
 #define DEVICE_NAME        CONFIG_BT_DEVICE_NAME
@@ -27,6 +29,8 @@ LOG_MODULE_REGISTER(BLE, CONFIG_SENSOR_LOG_LEVEL);
 static int16_t manufacturer_data[1+NUM_EULER_ANGLES];
 static bool notifications_enabled = false;
 static bool ble_connected = false;
+static struct bt_conn *current_conn;
+static void (*nus_data_handler_cb)(const APP_CMD_t data) = NULL;
 
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -42,7 +46,6 @@ static void notif_enabled(bool enabled, void *ctx)
 {
     ARG_UNUSED(ctx);
     notifications_enabled = enabled;
-    // printk("%s() - %s\n", __func__, (enabled ? "Enabled" : "Disabled"));
 }
 
 static void received(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
@@ -64,6 +67,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
         LOG_WRN("Connection failed (err %u)", err);
         return;
     }
+    current_conn = bt_conn_ref(conn);
     ble_connected = true;
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
@@ -78,13 +82,17 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
     bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN_ONE_TIME;
     int err;
 
-    ble_connected = false;
     err = bt_le_adv_start(bt_adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     if (err) {
         LOG_ERR("Failed to start advertising: %d\n", err);
 	return;
     }
 #endif
+    ble_connected = false;
+    if (current_conn) {
+        bt_conn_unref(current_conn);
+        current_conn = NULL;
+    }
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
     LOG_INF("Disconnected: %s (reason %u)", addr, reason);
@@ -158,3 +166,27 @@ int ble_svcs_send_euler_angles(int16_t& roll, int16_t& pitch, int16_t& yaw)
     return err;
 }
 
+/**@brief Function for sending data to client over BLE using notifications
+ */
+int send_client_data(char* p_str, const size_t len)
+{
+    int err = 0;
+    if (ble_connected)
+    {
+        uint8_t *p = (uint8_t *)p_str;
+        err = bt_nus_send(current_conn, p, len);
+    }
+    return err;
+}
+
+/**@brief register callback function for NUS data handler function
+ */
+void ble_svcs_register(void (*data_handler_fn)(const APP_CMD_t data))
+{
+    nus_data_handler_cb = data_handler_fn;
+}
+
+bool ble_svcs_connected()
+{
+    return ble_connected;
+}

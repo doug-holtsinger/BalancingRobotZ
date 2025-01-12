@@ -21,13 +21,17 @@
 #define MICRO10DEGREES_PER_DEGREE 100000
 #define MICRODEGREES_PER_DEGREE 1000000
 
-#define NOISE_THRESHOLD_MULTIPLIER 2.0
+#define NOISE_THRESHOLD_MULTIPLIER 2.0f
 #ifndef NOISE_THRESHOLD_MULTIPLIER_ACCELEROMETER
-#define NOISE_THRESHOLD_MULTIPLIER_ACCELEROMETER 2.0
+#define NOISE_THRESHOLD_MULTIPLIER_ACCELEROMETER 2.0f
 #endif
-#define NOISE_THRESHOLD_MULTIPLIER_MAX 2.0
-#define NOISE_THRESHOLD_MULTIPLIER_MIN 0.0
-#define NOISE_THRESHOLD_MULTIPLIER_INCR 0.2
+#define NOISE_THRESHOLD_MULTIPLIER_MAX 2.0f
+#define NOISE_THRESHOLD_MULTIPLIER_MIN 0.0f
+#define NOISE_THRESHOLD_MULTIPLIER_INCR 0.2f
+
+#define X_AXIS 0
+#define Y_AXIS 1
+#define Z_AXIS 2
 
 typedef enum {
         IMU_CALIBRATE_DISABLED = 0,
@@ -50,17 +54,23 @@ class IMU {
         int init();
         void update();
         void get_angles(float& roll, float& pitch, float& yaw);
+        void cmd(const uint8_t i_cmd);
+        void send_all_client_data();
     private:
         int set_sampling_freq();
         void reset_calibration(void);
         void reset_calibration_threshold(void);
         void calibrate_data(void);
         void calibrate_zero_offset(void);
+        void calibrate_magnetometer(void);
 
         int read_sensors();
         void compute_angles();
         int32_t sensor_ms2_to_mg(const struct sensor_value* const val_ms2);
         float sensor_gauss_to_mgauss(const struct sensor_value* const val);
+
+	void cmd_internal(const IMU_CMD_t i_cmd);
+        void params_save();
 
         const struct device *const dev_accel_gyro; 
         const struct device *const dev_magn;
@@ -72,8 +82,17 @@ class IMU {
 	float roll = 0.0, pitch = 0.0, yaw = 0.0;
 	AHRS_ALGORITHM_t AHRSalgorithm = AHRS_ALGORITHM_DEFAULT;
 
-        bool display_data[IMU_SENSOR_MAX+1];
         float noise_threshold_mult[IMU_SENSOR_MAX+1]; // initialized in imu.cpp 
+
+	unsigned int odr_select = 0;
+        bool timestamp_valid = false;
+        bool timestamp_odr_valid = false;
+        int32_t timestamp = 0;
+        int32_t timestamp_prev = 0;
+        float odr_hz[3];
+        int odr_update_cnt = 0;
+        bool new_data_odr = false;
+
         IMU_CALIBRATE_t calibrate_enable = IMU_CALIBRATE_DISABLED;
 
         struct sensor_value accelerometer_sens[3];
@@ -91,6 +110,14 @@ class IMU {
         uncalibrated_t magnetometer_uncal[3];
         calibrated_t magnetometer_cal[3];
 
+	IMU_SENSOR_t sensor_select = IMU_AHRS;
+
+        bool ideal_data[IMU_SENSOR_MAX+1] = { false };
+        bool data_hold[IMU_SENSOR_MAX+1] = { false };
+        bool display_data[IMU_SENSOR_MAX+1];    // initialized in imu.cpp
+        bool fixed_data = false;
+        bool uncalibrated_display = false;
+        bool settings_display = true;
 };
 
 #endif
