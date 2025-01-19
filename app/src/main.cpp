@@ -10,12 +10,13 @@
 
 #include <zephyr/bluetooth/services/nus.h>
 
+LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
+
 #include "imu.h"
 #include "qdec.h"
 #include "ble_svcs.h"
 #include "app_demux.h"
-
-LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
+#include "param_store_ids.h"
 
 /* The devicetree node identifier for the "led0" alias. */
 /* led2 is the Green LED */
@@ -35,7 +36,7 @@ int main(void)
 #endif
     float roll, pitch, yaw;
     int16_t roll_i, pitch_i, yaw_i;
-    IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn));
+    IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
     QDEC qdec = QDEC(DEVICE_DT_GET_ONE(nordic_nrf_qdec));
 
     LOG_INF("AHRS Started.\n");
@@ -52,21 +53,22 @@ int main(void)
     	return 0;
     }
 #endif
+
     ret = qdec.init();
     if (ret < 0) {
-	LOG_DBG("Failed to initialize QDEC");
+	LOG_ERR("Failed to initialize QDEC");
     	return 0;
     }
 
     ret = ble_svcs_init();
     if (ret < 0) {
-	LOG_DBG("Failed to initialize BLE");
+	LOG_ERR("Failed to initialize BLE");
     	return 0;
     }
 
     ret = imu.init();
     if (ret < 0) {
-	LOG_DBG("Failed to initialize IMU");
+	LOG_ERR("Failed to initialize IMU");
     	return 0;
     }
 
@@ -75,6 +77,7 @@ int main(void)
         appDemuxCmdType(IMU_CMD_t::CMD_MAX) );
 
 #if 0
+    // FIXME
     // Add command handler for Motor Driver
     appDemuxAddHandler(
         std::bind( &MotorDriver::cmd, std::ref(md), std::placeholders::_1),

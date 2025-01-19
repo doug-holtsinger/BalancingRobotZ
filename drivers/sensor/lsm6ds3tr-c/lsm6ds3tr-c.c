@@ -232,6 +232,7 @@ static int lsm6ds3tr_c_gyro_range_set(const struct device *dev, int32_t range)
 
 	fs = lsm6ds3tr_c_gyro_range_to_fs_val(range);
 	if (fs < 0) {
+		LOG_DBG("failed to find gyroscope full-scale %d %d", fs, range);
 		return fs;
 	}
 
@@ -252,7 +253,7 @@ static int lsm6ds3tr_c_gyro_config(const struct device *dev,
 {
 	switch (attr) {
 	case SENSOR_ATTR_FULL_SCALE:
-		return lsm6ds3tr_c_gyro_range_set(dev, sensor_rad_to_degrees(val));
+		return lsm6ds3tr_c_gyro_range_set(dev, val->val1);
 	case SENSOR_ATTR_SAMPLING_FREQUENCY:
 		return lsm6ds3tr_c_gyro_odr_set(dev, val->val1);
 	default:

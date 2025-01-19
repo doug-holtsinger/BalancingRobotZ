@@ -4,19 +4,24 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
+
 #include "imu.h"
 #include "imu_cal.h"
 #include "imu_cmd.h"
 #include "imu_hw.h"
+
 #include "notify.h"
 #include "logdef.h"
 #include "ble_svcs.h"
 
-LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
+#include "param_store.h"
 
-IMU::IMU( const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer):
+IMU::IMU( const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer, 
+		const uint16_t param_store_id) :
     dev_accel_gyro(dev_accelerometer_gyroscope),
-    dev_magn(dev_magnetometer)
+    dev_magn(dev_magnetometer),
+    param_store(param_store_id)
 {
     memset(display_data, true, sizeof(display_data));
 
@@ -38,12 +43,15 @@ IMU::IMU( const struct device *const dev_accelerometer_gyroscope, const struct d
 int IMU::init()
 {
     int rc = 0;
+    imu_calibration_params_t imu_cal_params;
 
     if (!device_is_ready(dev_accel_gyro)) {
+        LOG_ERR("Accel/Gyro is not ready");
         return rc;
     }
 
     if (!device_is_ready(dev_magn)) {
+        LOG_ERR("Magnetometer is not ready");
         return rc;
     }
 
@@ -51,11 +59,38 @@ int IMU::init()
         return rc;
     }
     reset_calibration();
+    param_store.init(&cp);
+    imu_cal_params = param_store.get();
+    init_params(imu_cal_params);
     return rc;
+}
+
+void IMU::init_params(imu_calibration_params_t params)
+{
+    // FIXME -- reset AHRS settings, like gyro sensitivity, as well
+    cp.gyroscope_correction = params.gyroscope_correction;
+    cp.gyroscope_enabled = params.gyroscope_enabled;
+    cp.magnetometer_stability = params.magnetometer_stability;
+    for (int i = 0 ; i < 3 ; i++)
+    {
+        cp.magnetometer_min[i] = params.magnetometer_min[i];
+        cp.magnetometer_max[i] = params.magnetometer_max[i];
+        cp.magnetometer_min_threshold[i] = params.magnetometer_min_threshold[i];
+        cp.magnetometer_uncal_last[i] = params.magnetometer_uncal_last[i];
+
+        cp.gyroscope_min[i] = params.gyroscope_min[i];
+        cp.gyroscope_max[i] = params.gyroscope_max[i];
+        cp.gyroscope_min_threshold[i] = params.gyroscope_min_threshold[i];
+
+        cp.accelerometer_min[i] = params.accelerometer_min[i];
+        cp.accelerometer_max[i] = params.accelerometer_max[i];
+        cp.accelerometer_min_threshold[i] = params.accelerometer_min_threshold[i];
+    }
 }
 
 void IMU::params_save()
 {
+    param_store.set(&cp);
 }
 
 // convert gauss to milligauss
@@ -127,6 +162,7 @@ int IMU::set_sampling_freq()
     rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ,
 			SENSOR_ATTR_SAMPLING_FREQUENCY, &attr);
     if (rc != 0) {
+        LOG_ERR("Error setting accel/gyro attr %d %d", rc, __LINE__);
         return rc;
     }
 
@@ -134,6 +170,7 @@ int IMU::set_sampling_freq()
     rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ,
 			SENSOR_ATTR_FULL_SCALE, &attr);
     if (rc != 0) {
+        LOG_ERR("Error setting accel/gyro attr %d %d", rc, __LINE__);
         return rc;
     }
 
@@ -142,6 +179,7 @@ int IMU::set_sampling_freq()
     rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ,
 			SENSOR_ATTR_SAMPLING_FREQUENCY, &attr);
     if (rc != 0) {
+        LOG_ERR("Error setting accel/gyro attr %d %d", rc, __LINE__);
         return rc;
     }
 
@@ -150,10 +188,9 @@ int IMU::set_sampling_freq()
     rc = sensor_attr_set(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ,
 			SENSOR_ATTR_FULL_SCALE, &attr);
     if (rc != 0) {
+        LOG_ERR("Error setting accel/gyro attr %d %d", rc, __LINE__);
         return rc;
     }
-
-
 
     return rc;
 }

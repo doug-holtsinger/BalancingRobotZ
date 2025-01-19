@@ -10,6 +10,7 @@
 #include "MadgwickAHRS.h"
 #include "SimpleAHRS.h"
 #include "imu_cal.h"
+#include "param_store.h"
 
 #ifndef __IMU_H__
 #define __IMU_H__
@@ -50,7 +51,8 @@ typedef enum {
 
 class IMU {
     public:
-        IMU(const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer);
+        IMU(const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer, 
+			const uint16_t param_store_id);
         int init();
         void update();
         void get_angles(float& roll, float& pitch, float& yaw);
@@ -63,6 +65,7 @@ class IMU {
         void calibrate_data(void);
         void calibrate_zero_offset(void);
         void calibrate_magnetometer(void);
+        void init_params(imu_calibration_params_t params);
 
         int read_sensors();
         void compute_angles();
@@ -78,6 +81,7 @@ class IMU {
         AHRS* AHRSptr;
 
 	imu_calibration_params_t cp;				// local copy of calibration params
+	ParamStore<imu_calibration_params_t> param_store;       // parameter storage object
 
 	float roll = 0.0, pitch = 0.0, yaw = 0.0;
 	AHRS_ALGORITHM_t AHRSalgorithm = AHRS_ALGORITHM_DEFAULT;

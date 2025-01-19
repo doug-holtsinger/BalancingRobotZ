@@ -18,3 +18,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_subdirectory(src)
 
+#target_include_directories(app PRIVATE ${ZEPHYR_BASE}/subsys/fs/nvs)
+
