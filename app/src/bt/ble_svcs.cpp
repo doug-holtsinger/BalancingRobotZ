@@ -50,13 +50,17 @@ static void notif_enabled(bool enabled, void *ctx)
 
 static void received(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
 {
-    char message[CONFIG_BT_L2CAP_TX_MTU + 1] = "";
+    uint8_t message[CONFIG_BT_L2CAP_TX_MTU + 1] = "";
 
     ARG_UNUSED(conn);
     ARG_UNUSED(ctx);
 
     memcpy(message, data, MIN(sizeof(message) - 1, len));
-    printk("%s() - Len: %d, Message: %s\n", __func__, len, message);
+    if (len == 1)
+    {
+	APP_CMD_t cmd = static_cast<APP_CMD_t>(message[0]);
+        nus_data_handler_cb(cmd);
+    }
 }
 
 static void connected(struct bt_conn *conn, uint8_t err)

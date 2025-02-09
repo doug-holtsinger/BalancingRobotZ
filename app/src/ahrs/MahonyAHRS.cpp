@@ -14,14 +14,17 @@
 //---------------------------------------------------------------------------------------------------
 // Header files
 
-#include <stdio.h>
+#include <cstdio>
+#include <cstring>
 #include <math.h>
 
 #include "AHRS.h"
 #include "MahonyAHRS.h"
 #include "imu_cmd.h"
-#include "logdef.h"
+
 #include "notify.h"
+#include "logdef.h"
+#include "ble_svcs.h"
 
 //====================================================================================================
 // Functions
@@ -221,7 +224,6 @@ void MahonyAHRS::update(float gx, float gy, float gz, float ax, float ay, float 
 }
 
 
-#ifdef BLE_CONSOLE_AVAILABLE
 void MahonyAHRS::send_all_client_data(const bool *display_data, const bool settings_display)
 {
     char s[NOTIFY_PRINT_STR_MAX_LEN];
@@ -232,14 +234,13 @@ void MahonyAHRS::send_all_client_data(const bool *display_data, const bool setti
     if (settings_display)
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 , PROP_GAIN, PRINTF_FLOAT_VALUE2(twoKp) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 , INTEG_GAIN, PRINTF_FLOAT_VALUE2(twoKi) );
-        send_client_data(s);
+        send_client_data(s, strlen(s));
     }
 
 }
-#endif
 
 void MahonyAHRS::cmd(const IMU_CMD_t cmd)
 {

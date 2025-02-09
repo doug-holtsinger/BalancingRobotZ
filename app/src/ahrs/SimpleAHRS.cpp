@@ -2,7 +2,7 @@
 //---------------------------------------------------------------------------------------------------
 // Header files
 
-#include <stdio.h>
+#include <cstdio>
 #include <math.h>
 
 #include "AHRS.h"
@@ -51,12 +51,10 @@ void SimpleAHRS::compute_angles(float& roll, float& pitch, float& yaw)
     roll = l_roll = roll * 57.29578f;
 }
 
-#ifdef BLE_CONSOLE_AVAILABLE
 void SimpleAHRS::send_all_client_data(const bool *display_data, const bool settings_display)
 {
     AHRS::send_all_client_data(display_data, settings_display);
 }
-#endif
 
 void SimpleAHRS::cmd(const IMU_CMD_t cmd)
 {

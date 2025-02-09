@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>

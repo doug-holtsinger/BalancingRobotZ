@@ -652,6 +652,7 @@ void IMU::update(void)
 
 void IMU::cmd(const uint8_t i_cmd)
 {
+    LOG_DBG("cmd %x", i_cmd);
     cmd_internal(static_cast<IMU_CMD_t>(i_cmd));
 }
 
