@@ -22,21 +22,18 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 /* led2 is the Green LED */
 #define LED0_NODE DT_ALIAS(led2)
 #define SLEEP_TIME_MS   1000
-// #define DEBUG_LED 1
+#define DEBUG_LED 1
 
 #ifdef DEBUG_LED
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 #endif
 
-int main(void)
+void main_thread(void *, void *, void *)
 {
     int ret;
 #ifdef DEBUG_LED
     bool led_state = true;
 #endif
-    float roll, pitch, yaw;
-    int16_t roll_i, pitch_i, yaw_i;
-    IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
     QDEC qdec = QDEC(DEVICE_DT_GET_ONE(nordic_nrf_qdec));
 
     LOG_INF("AHRS Started.\n");
@@ -44,37 +41,35 @@ int main(void)
 #ifdef DEBUG_LED
     if (!gpio_is_ready_dt(&led)) {
 	LOG_DBG("GPIO is not ready");
-    	return 0;
+    	return;
     }
 
     ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
     if (ret < 0) {
 	LOG_DBG("Failed to initialize GPIO");
-    	return 0;
+    	return;
     }
 #endif
 
     ret = qdec.init();
     if (ret < 0) {
 	LOG_ERR("Failed to initialize QDEC");
-    	return 0;
+    	return;
     }
 
     ret = ble_svcs_init();
     if (ret < 0) {
 	LOG_ERR("Failed to initialize BLE");
-    	return 0;
+    	return;
     }
 
-    ret = imu.init();
-    if (ret < 0) {
-	LOG_ERR("Failed to initialize IMU");
-    	return 0;
-    }
+#if 0
+    //DSH4 FIXME
 
     appDemuxRegisterHandler(
         std::bind( &IMU::cmd, std::ref(imu), std::placeholders::_1),
         appDemuxCmdType(IMU_CMD_t::CMD_MAX) );
+#endif
 
 #if 0
     // FIXME
@@ -106,25 +101,21 @@ int main(void)
     	ret = gpio_pin_toggle_dt(&led);
     	if (ret < 0) {
 	    LOG_DBG("Failed to toggle GPIO");
-            return 0;
+            return;
     	}
 
     	led_state = !led_state;
     	k_msleep(SLEEP_TIME_MS);
 #endif
 
-        imu.update();
-        imu.send_all_client_data();
 
-        imu.get_angles(roll, pitch, yaw);
-
-        roll_i = (int16_t)roll;
-        pitch_i = (int16_t)pitch;
-        yaw_i = (int16_t)yaw;
-        ble_svcs_send_euler_angles(roll_i, pitch_i, yaw_i);
     }
 
-
-    return 0;
 }
+
+#define MAIN_THREAD_STACK_SIZE 2048
+#define MAIN_THREAD_PRIORITY 4
+K_THREAD_DEFINE(main_tid, MAIN_THREAD_STACK_SIZE,
+                main_thread, NULL, NULL, NULL,
+                MAIN_THREAD_PRIORITY, K_ESSENTIAL|K_FP_REGS, 0);
 
