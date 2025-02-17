@@ -64,14 +64,6 @@ void main_thread(void *, void *, void *)
     }
 
 #if 0
-    //DSH4 FIXME
-
-    appDemuxRegisterHandler(
-        std::bind( &IMU::cmd, std::ref(imu), std::placeholders::_1),
-        appDemuxCmdType(IMU_CMD_t::CMD_MAX) );
-#endif
-
-#if 0
     // FIXME
     // Add command handler for Motor Driver
     appDemuxAddHandler(
