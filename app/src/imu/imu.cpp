@@ -21,35 +21,51 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 #define IMU_THREAD_STACK_SIZE 2048
 #define IMU_THREAD_PRIORITY 4
 
-extern "C" {
-    void imu_thread_entry(void *, void *, void *)
-    {
-        float roll, pitch, yaw;
-        int16_t roll_i, pitch_i, yaw_i;
-        int ret;
-        IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
-        ret = imu.init();
-        if (ret < 0) {
-	    LOG_ERR("Failed to initialize IMU");
-    	    return;
-        }
-        while (true) 
-	{
-            imu.update();
-            imu.send_all_client_data();
-            imu.get_angles(roll, pitch, yaw);
-            roll_i = (int16_t)roll;
-            pitch_i = (int16_t)pitch;
-            yaw_i = (int16_t)yaw;
-            ble_svcs_send_euler_angles(roll_i, pitch_i, yaw_i);
-	}
+void imu_thread(void *, void *, void *)
+{
+    float roll, pitch, yaw;
+    int16_t roll_i, pitch_i, yaw_i;
+    int ret;
+    IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
+    ret = imu.init();
+    if (ret < 0) {
+        LOG_ERR("Failed to initialize IMU");
+        return;
     }
-
-    K_THREAD_DEFINE(imu_tid, IMU_THREAD_STACK_SIZE,
-                imu_thread_entry, NULL, NULL, NULL,
-                IMU_THREAD_PRIORITY, K_ESSENTIAL|K_FP_REGS, 0);
-
+    while (true) 
+    {
+        imu.update();
+        imu.send_all_client_data();
+        imu.get_angles(roll, pitch, yaw);
+        roll_i = (int16_t)roll;
+        pitch_i = (int16_t)pitch;
+        yaw_i = (int16_t)yaw;
+        ble_svcs_send_euler_angles(roll_i, pitch_i, yaw_i);
+    }
 }
+
+#if 0
+void imu_update_work_handler(struct k_work *work)
+{
+    /* do the processing that needs to be done periodically */
+}
+
+K_WORK_DEFINE(imu_update_work, imu_update_work_handler);
+
+void imu_update_timer_handler(struct k_timer *dummy)
+{
+    k_work_submit(&imu_update_work);
+}
+
+K_TIMER_DEFINE(imu_update_timer, imu_update_timer_handler, NULL);
+
+/* start a periodic timer that expires once every second */
+k_timer_start(&imu_update_timer, K_USEC(2403), K_USEC(2403)); 
+#endif
+
+K_THREAD_DEFINE(imu_tid, IMU_THREAD_STACK_SIZE,
+                imu_thread, NULL, NULL, NULL,
+                IMU_THREAD_PRIORITY, K_ESSENTIAL|K_FP_REGS, 0);
 
 IMU::IMU( const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer, 
 		const uint16_t param_store_id) :
