@@ -6,6 +6,8 @@
 
 LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 
+#include "thread.h"
+
 #include "imu.h"
 #include "imu_cal.h"
 #include "imu_cmd.h"
@@ -21,9 +23,9 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 #include "param_store_ids.h"
 
 #define IMU_THREAD_STACK_SIZE 2048
-#define IMU_THREAD_PRIORITY 4
 
 IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
+float rollf;
 
 void imu_update_work_handler(struct k_work *work)
 {
@@ -40,21 +42,32 @@ void imu_update_timer_handler(struct k_timer *dummy)
 
 K_TIMER_DEFINE(imu_update_timer, imu_update_timer_handler, NULL);
 
+float get_imu_roll(void)
+{
+    return rollf;
+}
+
 void imu_thread(void *, void *, void *)
 {
-    float roll, pitch, yaw;
-    int16_t roll_i, pitch_i, yaw_i;
+    float pitch, yaw;
+    int16_t rolli, pitchi, yawi;
     int ret;
-    ret = imu.init();
-    if (ret < 0) {
-        LOG_ERR("Failed to initialize IMU");
-        return;
-    }
+    int debug_cnt = 0;
 
     /* allow commands to be sent to the IMU */
     appDemuxRegisterHandler(
         std::bind( &IMU::cmd, std::ref(imu), std::placeholders::_1),
         appDemuxCmdType(IMU_CMD_t::CMD_MAX) );
+
+    /* set priority to normal after initializing command handler */
+    k_thread_priority_set(k_current_get(), NORMAL_THREAD_PRIORITY);
+
+    ret = imu.init();
+    if (ret < 0) 
+    {
+        LOG_ERR("Failed to initialize IMU");
+        return;
+    }
 
     /* initial update, remaining updates are handled by the timer thread */
     imu.update();
@@ -65,13 +78,20 @@ void imu_thread(void *, void *, void *)
     while (true) 
     {
         imu.send_all_client_data();
-        imu.get_angles(roll, pitch, yaw);
-        roll_i = (int16_t)roll;
-        pitch_i = (int16_t)pitch;
-        yaw_i = (int16_t)yaw;
-        ble_svcs_send_euler_angles(roll_i, pitch_i, yaw_i);
+        imu.get_angles(rollf, pitch, yaw);
+        rolli = (int16_t)rollf;
+        pitchi = (int16_t)pitch;
+        yawi = (int16_t)yaw;
+        ble_svcs_send_euler_angles(rolli, pitchi, yawi);
 
-    	k_yield();
+	debug_cnt++;
+	if ((debug_cnt & 0x3FF) == 0)
+	{
+            LOG_DBG("cnt %d", debug_cnt);
+    	    k_msleep(100);
+	}
+	// DSH4
+        k_yield();
     }
 }
 
@@ -486,7 +506,7 @@ void IMU::send_all_client_data()
 
     // Euler Angles
     snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMATI PRINTF_FLOAT_FORMATI , EULER_ANGLES, PRINTF_FLOAT_VALUE2(roll), PRINTF_FLOAT_VALUEI(pitch), PRINTF_FLOAT_VALUEI(yaw));
-    send_client_data(s, strlen(s));
+    send_client_data(s);
 
     // Accelerometer
     if (display_data[IMU_ACCELEROMETER])
@@ -497,7 +517,7 @@ void IMU::send_all_client_data()
             (int)accelerometer_cal[1],
             (int)accelerometer_cal[2]
             );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         if (uncalibrated_display)
         {
@@ -507,7 +527,7 @@ void IMU::send_all_client_data()
                 (int)accelerometer_uncal[1],
                 (int)accelerometer_uncal[2]
                 );
-            send_client_data(s, strlen(s));
+            send_client_data(s);
     
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
                  ACCELEROMETER_MIN_THRESHOLD,
@@ -515,7 +535,7 @@ void IMU::send_all_client_data()
                 (int)cp.accelerometer_min_threshold[1],
                 (int)cp.accelerometer_min_threshold[2]
                 );
-            send_client_data(s, strlen(s));
+            send_client_data(s);
         }
     }
 
@@ -529,7 +549,7 @@ void IMU::send_all_client_data()
             PRINTF_FLOAT_VALUE2(gyroscope_cal[1]),
             PRINTF_FLOAT_VALUE2(gyroscope_cal[2])
         );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         if (uncalibrated_display)
         {
@@ -539,7 +559,7 @@ void IMU::send_all_client_data()
                 (int)gyroscope_uncal[1],
                 (int)gyroscope_uncal[2]
                 );
-            send_client_data(s, strlen(s));
+            send_client_data(s);
     
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT PRINTF_FLOAT_FORMAT PRINTF_FLOAT_FORMAT ,
                 GYROSCOPE_MIN_THRESHOLD,
@@ -547,7 +567,7 @@ void IMU::send_all_client_data()
                 PRINTF_FLOAT_VALUE(cp.gyroscope_min_threshold[1]),
                 PRINTF_FLOAT_VALUE(cp.gyroscope_min_threshold[2])
             );
-            send_client_data(s, strlen(s));
+            send_client_data(s);
         }
     }
 
@@ -558,15 +578,15 @@ void IMU::send_all_client_data()
             GYRO_CORRECTION,
             PRINTF_FLOAT_VALUE7(cp.gyroscope_correction)
             );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %u", AHRS_ALGORITHM, static_cast<int>(AHRSalgorithm));
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT ,
             ACCELEROMETER_NOISE_THRESHOLD_MULT,
             PRINTF_FLOAT_VALUE(noise_threshold_mult[IMU_ACCELEROMETER]));
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
 	// FIXME -- send other noise thresholds for gyro and magnetometer
 
@@ -578,7 +598,7 @@ void IMU::send_all_client_data()
             ODR_HZ_ACCELEROMETER + odr_select,
             PRINTF_FLOAT_VALUE2(odr_hz[odr_select])
             );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
     }
 
 
@@ -591,7 +611,7 @@ void IMU::send_all_client_data()
             (int)magnetometer_cal[1],
             (int)magnetometer_cal[2]
             );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         if (uncalibrated_display)
         {
@@ -601,7 +621,7 @@ void IMU::send_all_client_data()
                 (int)magnetometer_uncal[1],
                 (int)magnetometer_uncal[2]
                 );
-            send_client_data(s, strlen(s));
+            send_client_data(s);
     
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
                 MAGNETOMETER_MIN_THRESHOLD,
@@ -609,7 +629,7 @@ void IMU::send_all_client_data()
                 (int)cp.magnetometer_min_threshold[1],
                 (int)cp.magnetometer_min_threshold[2]
                 );
-            send_client_data(s, strlen(s));
+            send_client_data(s);
         }
     
     }
@@ -634,7 +654,7 @@ void IMU::send_all_client_data()
     snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %u",
             BIT_FLAGS, bit_flags
             );
-    send_client_data(s, strlen(s));
+    send_client_data(s);
 
     // AHRS sends data to client
     AHRSptr->send_all_client_data(display_data, settings_display);
@@ -714,7 +734,7 @@ void IMU::update(void)
 
 void IMU::cmd(const uint8_t i_cmd)
 {
-    LOG_DBG("cmd %x", i_cmd);
+    LOG_DBG("cmd %d", i_cmd);
     cmd_internal(static_cast<IMU_CMD_t>(i_cmd));
 }
 

@@ -44,47 +44,47 @@ void AHRS::send_all_client_data(const bool *display_data, const bool settings_di
     if (display_data[IMU_ACCELEROMETER])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 , ACCELEROMETER_NORMAL, PRINTF_FLOAT_VALUE2(axN), PRINTF_FLOAT_VALUE2(ayN), PRINTF_FLOAT_VALUE2(azN) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
     }
 
     // Gyroscope
     if (display_data[IMU_GYROSCOPE])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT3 , GYROSCOPE_NORMAL_X, PRINTF_FLOAT_VALUE3(gxN) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT3 , GYROSCOPE_NORMAL_Y, PRINTF_FLOAT_VALUE3(gyN) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT3 , GYROSCOPE_NORMAL_Z, PRINTF_FLOAT_VALUE3(gzN) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
     }
 
     // Magnetometer
     if (display_data[IMU_MAGNETOMETER])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 , MAGNETOMETER_NORMAL, PRINTF_FLOAT_VALUE2(mxN), PRINTF_FLOAT_VALUE2(myN), PRINTF_FLOAT_VALUE2(mzN) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
     }
 
     // Quaternion
     if (display_data[IMU_AHRS])
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q0, PRINTF_FLOAT_VALUE4(q0X) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q1, PRINTF_FLOAT_VALUE4(q1X) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q2, PRINTF_FLOAT_VALUE4(q2X) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT4 , QUATERNION_Q3, PRINTF_FLOAT_VALUE4(q3X) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
     }
 
     if (settings_display)
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 , SAMPLE_FREQ, PRINTF_FLOAT_VALUE2(sampleFreq) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
     }
 
 }

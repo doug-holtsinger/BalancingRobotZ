@@ -172,13 +172,13 @@ int ble_svcs_send_euler_angles(int16_t& roll, int16_t& pitch, int16_t& yaw)
 
 /**@brief Function for sending data to client over BLE using notifications
  */
-int send_client_data(char* p_str, const size_t len)
+int send_client_data(char* p_str)
 {
     int err = 0;
     if (ble_connected)
     {
         uint8_t *p = (uint8_t *)p_str;
-        err = bt_nus_send(current_conn, p, len);
+        err = bt_nus_send(current_conn, p, strlen(p_str));
     }
     return err;
 }

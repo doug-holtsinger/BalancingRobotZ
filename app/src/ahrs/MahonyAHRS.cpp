@@ -234,10 +234,10 @@ void MahonyAHRS::send_all_client_data(const bool *display_data, const bool setti
     if (settings_display)
     {
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 , PROP_GAIN, PRINTF_FLOAT_VALUE2(twoKp) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
 
         snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 , INTEG_GAIN, PRINTF_FLOAT_VALUE2(twoKi) );
-        send_client_data(s, strlen(s));
+        send_client_data(s);
     }
 
 }

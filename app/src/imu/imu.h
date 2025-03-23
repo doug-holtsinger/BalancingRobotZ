@@ -49,6 +49,8 @@ typedef enum {
 	AHRS_SIMPLE
 } AHRS_ALGORITHM_t;
 
+float get_imu_roll(void);
+
 class IMU {
     public:
         IMU(const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer, 

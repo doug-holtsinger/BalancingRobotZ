@@ -73,3 +73,6 @@ double QDEC::get_rotation()
 	return rotation;
 }
 
+//
+// FIXME -- make a thread?  Move qdec code from main here?
+//
