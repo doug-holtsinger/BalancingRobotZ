@@ -29,10 +29,31 @@ constexpr float MOTOR_PID_SP_INCR = 0.05;
 // disable the motor past this Roll angle
 constexpr float MOTOR_DISABLE_ROLL_ANGLE = 35.0;
 
+// FIXME - put these into the DTS
+// PWM port pin connections on nRF52 board
+// Direction pin
+//constexpr uint8_t MOTOR_DRIVER_APHASE = 20;
+// PWM pin
+//constexpr uint8_t MOTOR_DRIVER_AENBL = 17;
+// Direction pin
+//constexpr uint8_t MOTOR_DRIVER_BPHASE = 24;
+// PWM pin
+//constexpr uint8_t MOTOR_DRIVER_BENBL = 22;
+
+/** @brief PWM base clock periods in integer nanoseconds. */
+constexpr uint32_t PWM_CLK_PERIOD_16MHz  = 62;
+constexpr uint32_t PWM_CLK_PERIOD_8MHz   = 125;
+constexpr uint32_t PWM_CLK_PERIOD_4MHz   = (PWM_CLK_PERIOD_8MHz*2);
+constexpr uint32_t PWM_CLK_PERIOD_2MHz   = (PWM_CLK_PERIOD_4MHz*2);
+constexpr uint32_t PWM_CLK_PERIOD_1MHz   = (PWM_CLK_PERIOD_2MHz*2);
+constexpr uint32_t PWM_CLK_PERIOD_500kHz = (PWM_CLK_PERIOD_1MHz*2);
+constexpr uint32_t PWM_CLK_PERIOD_250kHz = (PWM_CLK_PERIOD_500kHz*2);
+constexpr uint32_t PWM_CLK_PERIOD_125kHz = (PWM_CLK_PERIOD_250kHz*2);
+
 class MotorDriver {
     public:
         MotorDriver();
-        void init();
+        int init();
 	void cmd_internal(const MOTOR_DRIVER_CMD_t i_cmd);
 	// FIXME -- change to MOTOR_DRIVER_CMD_t instead of uint8_t
 	void cmd(const uint8_t i_cmd);
@@ -50,6 +71,10 @@ class MotorDriver {
 	bool motor_enabled;
 	bool display_enabled;
         pid_ctrl_t drv_ctrla, drv_ctrlb; 
+	uint32_t pwm_base_clock;
+
+	struct pwm_dt_spec pwm_motor[2];
+
         void pwm_base_clock_modify(const bool up);
 };
 

@@ -24,11 +24,6 @@
     steps = <830>;
 };
 
-&pwm0 {
-	status = "okay";
-	pinctrl-0 = <&pwm0_default>;
-};
-
 &lsm6ds3 {
     accel_pm = <0>;
     accel_range = <0>;
@@ -37,3 +32,37 @@
     gyro_range = <1>;
     gyro_odr = <6>;
 };
+
+/ {
+    /delete-node/ pwmleds;
+};
+
+/ {
+    aliases {
+        /delete-property/ red-pwm-led;
+        /delete-property/ green-pwm-led;
+        /delete-property/ blue-pwm-led;
+        /delete-property/ pwm-led0;
+        /delete-property/ pwm-led1;
+        /delete-property/ pwm-led2;
+
+        motor0 = &pwm_motor0;
+        motor1 = &pwm_motor1;
+ 
+    };
+
+    /delete-node/ pwmleds;
+
+    pwm_motor {
+        compatible = "pwm-leds";
+        // compatible = "nordic,nrf-pwm";
+        pwm_motor0: pwm_motor_0 {
+            pwms = < &pwm0 0x0 0x1312d00 0x0 >;
+        };
+        pwm_motor1: pwm_motor_1 {
+            pwms = < &pwm0 0x1 0x1312d00 0x0 >;
+        };
+    };
+
+};
+

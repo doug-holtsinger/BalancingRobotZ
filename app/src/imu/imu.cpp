@@ -77,19 +77,22 @@ void imu_thread(void *, void *, void *)
 
     while (true) 
     {
-        imu.send_all_client_data();
+	if ((debug_cnt & 0x3FF) == 0)
+	{
+            imu.send_all_client_data();
+	}
         imu.get_angles(rollf, pitch, yaw);
         rolli = (int16_t)rollf;
         pitchi = (int16_t)pitch;
         yawi = (int16_t)yaw;
         ble_svcs_send_euler_angles(rolli, pitchi, yawi);
 
-	debug_cnt++;
 	if ((debug_cnt & 0x3FF) == 0)
 	{
             LOG_DBG("cnt %d", debug_cnt);
     	    k_msleep(100);
 	}
+	debug_cnt++;
 	// DSH4
         k_yield();
     }
@@ -662,7 +665,7 @@ void IMU::send_all_client_data()
 }
 
 #if 0
-//FIXME
+//FIXME -- add this back in?
 void IMU::MeasureODR()
 {
     bool timestamp_overflow;
@@ -717,7 +720,7 @@ void IMU::update(void)
                 calibrate_magnetometer();
 		break;
 #if 0
-		//FIXME
+		//FIXME -- add this back in?
 	    case IMU_CALIBRATE_GYROSCOPE:
                 calibrate_gyroscope();
 		break;

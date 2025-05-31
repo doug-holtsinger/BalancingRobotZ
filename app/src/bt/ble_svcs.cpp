@@ -59,6 +59,7 @@ static void received(struct bt_conn *conn, const void *data, uint16_t len, void 
     if (len == 1)
     {
 	APP_CMD_t cmd = static_cast<APP_CMD_t>(message[0]);
+        LOG_DBG("cmd %d pri %d", cmd,  k_thread_priority_get(k_current_get() ));
         nus_data_handler_cb(cmd);
     }
 }

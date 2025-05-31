@@ -14,7 +14,7 @@ void appDemuxExecHandler(const APP_CMD_t cmd)
     {
         if (cmd >= app_handlers[i].cmd_min && cmd <= app_handlers[i].cmd_max)
 	{
-            LOG_DBG("cmd %d %d %d", i, cmd , app_handlers[i].cmd_min);
+            // LOG_DBG("cmd %d %d %d", i, cmd , app_handlers[i].cmd_min);
 	    // FIXME -- wake a thread before calling handler?
             app_handlers[i].handler(cmd - app_handlers[i].cmd_min);
 	    break;
@@ -31,7 +31,7 @@ void appDemuxRegisterHandler(const std::function<void(const APP_CMD_t cmd)>& han
     }
     const APP_CMD_t app_cmd_max = cmd_min_next + cmd_max;
     AppHandler app_handler{handler, cmd_min_next, app_cmd_max};
-    LOG_DBG("reg %d %d %d", handler_idx, cmd_min_next, app_cmd_max);
+    // LOG_DBG("reg %d %d %d", handler_idx, cmd_min_next, app_cmd_max);
     app_handlers[handler_idx++] = app_handler;
     cmd_min_next = app_cmd_max + 1; 
 }
