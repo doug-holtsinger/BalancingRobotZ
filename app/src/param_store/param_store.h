@@ -17,7 +17,7 @@
 #define NVS_PARTITION_DEVICE    FIXED_PARTITION_DEVICE(NVS_PARTITION)
 #define NVS_PARTITION_OFFSET    FIXED_PARTITION_OFFSET(NVS_PARTITION)
 
-// LOG_MODULE_REGISTER(flash, CONFIG_APP_LOG_LEVEL);
+// Logging is controlled by the module that includes this file.
 
 template <typename T>
 class ParamStore {

@@ -111,11 +111,10 @@ struct bt_nus_cb nus_listener = {
 int ble_svcs_init(void)
 {
     int err = 0;
+    struct bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN;
 
+    // FIXME: use a non-standard manufacturer ID
     manufacturer_data[0] = -1;
-    // bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_OPT_CONNECTABLE;
-    struct bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_PARAM(
-        BT_LE_ADV_OPT_CONNECTABLE, ADV_INT_MIN, ADV_INT_MAX, NULL);
 
     static struct bt_conn_cb conn_callbacks = {
         .connected    = connected,

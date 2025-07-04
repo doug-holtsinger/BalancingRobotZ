@@ -13,9 +13,9 @@ project(app LANGUAGES C)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Enable debug logging in the NRFX PWM HAL (modules/hal/nordic/nrfx/drivers/src)
-zephyr_compile_definitions(NRFX_PWM_CONFIG_LOG_ENABLED=1)
-zephyr_compile_definitions(NRFX_PWM_CONFIG_LOG_LEVEL=4)
+# Controls logging in the NRFX PWM HAL (modules/hal/nordic/nrfx/drivers/src)
+zephyr_compile_definitions(NRFX_PWM_CONFIG_LOG_ENABLED=0)
+#zephyr_compile_definitions(NRFX_PWM_CONFIG_LOG_LEVEL=4)
 
 #target_sources(app PRIVATE src/main.c)
 #target_sources(app PRIVATE src/bt_nus.c)

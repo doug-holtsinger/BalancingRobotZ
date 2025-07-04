@@ -16,6 +16,7 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 #include "notify.h"
 #include "logdef.h"
 #include "ble_svcs.h"
+#include "ble_cfg.h"
 
 #include "app_demux.h"
 
@@ -75,9 +76,9 @@ void imu_thread(void *, void *, void *)
     /* start a periodic timer to perform the update */
     k_timer_start(&imu_update_timer, K_USEC(2403), K_USEC(2403)); 
 
-    while (true) 
+    while (true)
     {
-	if ((debug_cnt & 0x3FF) == 0)
+	if ((debug_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
 	{
             imu.send_all_client_data();
 	}
@@ -87,13 +88,6 @@ void imu_thread(void *, void *, void *)
         yawi = (int16_t)yaw;
         ble_svcs_send_euler_angles(rolli, pitchi, yawi);
 
-	if ((debug_cnt & 0x3FF) == 0)
-	{
-            LOG_DBG("cnt %d", debug_cnt);
-    	    k_msleep(100);
-	}
-	debug_cnt++;
-	// DSH4
         k_yield();
     }
 }

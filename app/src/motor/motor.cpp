@@ -45,6 +45,7 @@
 #include <zephyr/logging/log.h>
 
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/gpio.h>
 
 LOG_MODULE_REGISTER(MOTOR, CONFIG_SENSOR_LOG_LEVEL);
 
@@ -53,6 +54,7 @@ LOG_MODULE_REGISTER(MOTOR, CONFIG_SENSOR_LOG_LEVEL);
 #include "notify.h"
 #include "logdef.h"
 #include "ble_svcs.h"
+#include "ble_cfg.h"
 #include "app_demux.h"
 #include "imu.h"
 
@@ -76,15 +78,17 @@ constexpr float SPEED_PID_CTRL_MAX = 1.0;
 constexpr bool SPEED_PID_REVERSE_OUTPUT = true;
 constexpr bool SPEED_PID_LOW_PASS_FILTER = true;
 
+
 #if 1
-// extern FIXME
-int32_t wheel_encoder;
+// extern FIXME -- connect to QDEC
+int32_t wheel_encoder = 0;
 #endif
+
 
 void motor_driver_thread(void *, void *, void *)
 {
     float speedControlSP = 0.0;
-    int debug_cnt = 0;
+    int ble_send_cnt = 0;
     PID speedControlPID = PID({SPEED_PID_KP, SPEED_PID_KI, SPEED_PID_KD, SPEED_PID_SP},
            {SPEED_PID_KP_INCR, SPEED_PID_KI_INCR, SPEED_PID_KD_INCR, SPEED_PID_SP_INCR},
             SPEED_PID_CTRL_MAX, SPEED_PID_RECORD_KEY, SPEED_PID_NUM,
@@ -125,18 +129,11 @@ void motor_driver_thread(void *, void *, void *)
         md.setActualRollAngle(get_imu_roll());
         speedControlSP = speedControlPID.update(static_cast<float>(wheel_encoder));
         md.setDesiredRollAngle(speedControlSP);
-	if ((debug_cnt & 0x3FF) == 0)
+	if ((ble_send_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
 	{
             md.send_all_client_data();
 	}
 
-	if ((debug_cnt & 0x3FF) == 0)
-	{
-            LOG_DBG("cnt %d", debug_cnt);
-    	    k_msleep(100);
-	}
-	debug_cnt++;
-	// DSH4
 	k_yield();
     }
 }
@@ -149,19 +146,19 @@ MotorDriver::MotorDriver() :
     pidCtrl({MOTOR_PID_KP, MOTOR_PID_KI, MOTOR_PID_KD, MOTOR_PID_SP},
        {MOTOR_PID_KP_INCR, MOTOR_PID_KI_INCR, MOTOR_PID_KD_INCR, MOTOR_PID_SP_INCR},
         PID_CONTROL_SETTING_MAX, MOTOR_PID_RECORD_KEY, MOTOR_PID_NUM),
-    motor_enabled(true),
-    display_enabled(true),
+    motor_enabled(MOTOR_ENABLE_DEFAULT),
+    display_enabled(MOTOR_DISPLAY_DEFAULT),
     drv_ctrla(0), 
-    drv_ctrlb(0),
-    pwm_base_clock(PWM_CLK_PERIOD_4MHz)
+    drv_ctrlb(0)
 {
 }
 
 void MotorDriver::setActualRollAngle(float i_roll)
 {
     drv_ctrla = pidCtrl.update(i_roll);
+    // motors spin in opposite directions
     drv_ctrlb = -drv_ctrla;
-    if (abs(i_roll) > MOTOR_DISABLE_ROLL_ANGLE)
+    if (motor_enabled && abs(i_roll) > MOTOR_DISABLE_ROLL_ANGLE)
     {
         drv_ctrla = drv_ctrlb = 0;
     }
@@ -186,89 +183,66 @@ pid_ctrl_t MotorDriver::getValue()
 
 void MotorDriver::setValues(pid_ctrl_t driver0, pid_ctrl_t driver1)
 {
-    if (!motor_enabled)
+    uint32_t pwm_pulse0_ns, pwm_pulse1_ns;
+
+    // Drive GPIO pins direction
+    if (driver0 >= 0)
     {
-        driver0 = driver1 = 0;
+        gpio_pin_set_dt(&motor_direction[0], 1);
+    } else {
+        gpio_pin_set_dt(&motor_direction[0], 0);
+    }
+    if (driver1 >= 0)
+    {
+        gpio_pin_set_dt(&motor_direction[1], 1);
+    } else {
+        gpio_pin_set_dt(&motor_direction[1], 0);
     }
 
-    // FIXME drive GPIO pins direction and PWM
+    pwm_pulse0_ns = abs(driver0) * pwm_period_ns / MOTOR_DRIVER_TOP_VALUE;
+    pwm_pulse1_ns = abs(driver1) * pwm_period_ns / MOTOR_DRIVER_TOP_VALUE;
+
+    if (!motor_enabled)
+    {
+        pwm_pulse0_ns = pwm_pulse1_ns = 0;
+    }
+    pwm_set_dt(&pwm_motor[0], pwm_period_ns, pwm_pulse0_ns );
+    pwm_set_dt(&pwm_motor[1], pwm_period_ns, pwm_pulse1_ns );
 
 }
 
 int MotorDriver::init()
 {
+    int ret;
+
     pidCtrl.init();
 
-    // static const struct pwm_dt_spec pwm_motor = PWM_DT_SPEC_GET(DT_ALIAS(pwm_led0));
-#if 0
-    pwm_motor[0] = PWM_DT_SPEC_GET(DT_ALIAS(pwm_led0));
-    pwm_motor[1] = PWM_DT_SPEC_GET(DT_ALIAS(pwm_led1));
-#else
     pwm_motor[0] = PWM_DT_SPEC_GET(DT_ALIAS(motor0));
     pwm_motor[1] = PWM_DT_SPEC_GET(DT_ALIAS(motor1));
-#endif
 
-    if (!pwm_is_ready_dt(&pwm_motor[0])) {
-        LOG_ERR("PWM device %s is not ready\n", pwm_motor[0].dev->name);
-        return 1;
-    }
-    if (!pwm_is_ready_dt(&pwm_motor[1])) {
-        LOG_ERR("PWM device %s is not ready\n", pwm_motor[1].dev->name);
-        return 1;
-    }
+    motor_direction[0] = GPIO_DT_SPEC_GET(DT_ALIAS(motordir0), gpios);
+    motor_direction[1] = GPIO_DT_SPEC_GET(DT_ALIAS(motordir1), gpios);
 
-    // Configure GPIO pins for Motor direction -- FIXME
-
-    // Configure PWM pins for Motor PWM -- FIXME
-
-    //DSH4  base_clock=125,  period = 62
-#if 0
-    LOG_DBG("PWM0 clk %u\n", pwm_base_clock);
-    pwm_set_dt(&pwm_motor[0], pwm_base_clock, pwm_base_clock / 2U);
-    LOG_DBG("PWM1 clk %u\n", pwm_base_clock);
-    pwm_set_dt(&pwm_motor[1], pwm_base_clock, pwm_base_clock / 2U);
-#else
-    /* period in terms of the number of 16Mhz clocks , originally was period in 8 Mhz clocks (TOP = 8192  , 8 Mhz clock) */
-#define CLK_MULT (1000/16)
-// #define TOP_COUNT 8192
-#define TOP_COUNT 1000
-    // 8192 * 1000 / 16 nanoseconds =  512,000 ns = 512ms
-    // 1 16Mhz clock = 62.5 nanoseconds
-    // base clock is the number of nanoseconds for 8192 clocks at 16Mhz
-    pwm_base_clock = TOP_COUNT * CLK_MULT;
-    // 1500 slow turn of the one motor
-    // 2000 slow turn of both motors in opposite directions (fast if 2 channels)
-    // 2500 moderate turn of both motors in opposite directions
-    // uint32_t pwm_pulse_cycles = 1500 * CLK_MULT;       
-    // uint32_t pwm_pulse_cycles = pwm_base_clock / 4;
-    uint32_t pwm_pulse_cycles = pwm_base_clock / 6;
-    // uint32_t pwm_pulse_cycles = 2500 * CLK_MULT;          
-    //  b0 89   b0 89  00 00  00 00   x3089 = 12425 decimal
-    LOG_DBG("PWM0 clk %u %u\n", pwm_base_clock, pwm_pulse_cycles);
-    pwm_set_dt(&pwm_motor[0], pwm_base_clock, pwm_pulse_cycles );
-#if 1
-    LOG_DBG("PWM1 clk %u\n", pwm_base_clock);
-    pwm_set_dt(&pwm_motor[1], pwm_base_clock, pwm_pulse_cycles);
-#endif
-
-#endif
-
-#if 0
-#define MIN_PERIOD PWM_SEC(1U) / 128U
-#define MAX_PERIOD PWM_SEC(1U)
-
-    LOG_DBG("Calibrating for channel %d...\n", pwm_motor.channel);
-    max_period = MAX_PERIOD;
-    while (pwm_set_dt(&pwm_motor, max_period, max_period / 2U)) {
-        max_period /= 2U;
-        if (max_period < (4U * MIN_PERIOD)) {
-                LOG_ERR("Error: PWM device "
-                       "does not support a period at least %lu\n",
-                       4U * MIN_PERIOD);
-                return 0;
+    for (int i=0 ; i < 2; i++)
+    {
+        if (!pwm_is_ready_dt(&pwm_motor[i])) {
+            LOG_ERR("PWM device %s is not ready\n", pwm_motor[i].dev->name);
+            return 1;
+        }
+        if (!gpio_is_ready_dt(&motor_direction[i])) {
+            LOG_ERR("GPIO device %s is not ready\n", motor_direction[i].port->name);
+            return 1;
         }
     }
-#endif
+
+    for (int i=0 ; i < 2; i++)
+    {
+        ret = gpio_pin_configure_dt(&motor_direction[i], GPIO_OUTPUT_ACTIVE);
+        if (ret < 0) {
+            LOG_ERR("GPIO device %s config issue %d\n", motor_direction[i].port->name, ret);
+            return ret;
+        }
+    }
 
     return 0;
 
@@ -299,75 +273,9 @@ void MotorDriver::send_all_client_data()
                 MOTOR_DRIVER, drv_ctrla);
     send_client_data(s);
 
-    snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %d", 
-                PWM_CLOCK, pwm_base_clock); 
-    send_client_data(s);
-
     pidCtrl.send_all_client_data();
 }
 
-void MotorDriver::pwm_base_clock_modify(const bool up)
-{
-    if (up)
-    {
-        switch (pwm_base_clock)
-        {
-            case PWM_CLK_PERIOD_125kHz:
-                pwm_base_clock = PWM_CLK_PERIOD_250kHz;
-                break;
-            case PWM_CLK_PERIOD_250kHz:
-                pwm_base_clock = PWM_CLK_PERIOD_500kHz;
-                break;
-            case PWM_CLK_PERIOD_500kHz:
-                pwm_base_clock = PWM_CLK_PERIOD_1MHz;
-                break;
-            case PWM_CLK_PERIOD_1MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_2MHz;
-                break;
-            case PWM_CLK_PERIOD_2MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_4MHz;
-                break;
-            case PWM_CLK_PERIOD_4MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_8MHz;
-                break;
-            case PWM_CLK_PERIOD_8MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_16MHz;
-                break;
-            case PWM_CLK_PERIOD_16MHz:
-            default: break;
-        }
-    } else 
-    {
-        switch (pwm_base_clock)
-        {
-            case PWM_CLK_PERIOD_125kHz:
-                break;
-            case PWM_CLK_PERIOD_250kHz:
-                pwm_base_clock = PWM_CLK_PERIOD_125kHz;
-                break;
-            case PWM_CLK_PERIOD_500kHz:
-                pwm_base_clock = PWM_CLK_PERIOD_250kHz;
-                break;
-            case PWM_CLK_PERIOD_1MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_500kHz;
-                break;
-            case PWM_CLK_PERIOD_2MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_1MHz;
-                break;
-            case PWM_CLK_PERIOD_4MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_2MHz;
-                break;
-            case PWM_CLK_PERIOD_8MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_4MHz;
-                break;
-            case PWM_CLK_PERIOD_16MHz:
-                pwm_base_clock = PWM_CLK_PERIOD_8MHz;
-                break;
-            default: break;
-        }
-    }
-    pwm_set_dt(&pwm_motor[0], pwm_base_clock, pwm_base_clock / 2U);
-}
 
 void MotorDriver::cmd_internal(const MOTOR_DRIVER_CMD_t i_cmd)
 {
@@ -378,12 +286,6 @@ void MotorDriver::cmd_internal(const MOTOR_DRIVER_CMD_t i_cmd)
             break;
         case MOTOR_DRIVER_CMD_t::TOGGLE_DISPLAY:
             display_enabled = !display_enabled;
-            break;
-        case MOTOR_DRIVER_CMD_t::PWM_CLK_UP:
-	    // pwm_base_clock_modify(true);
-            break;
-        case MOTOR_DRIVER_CMD_t::PWM_CLK_DOWN:
-	    // pwm_base_clock_modify(false);
             break;
         default: break;
     }

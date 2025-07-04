@@ -33,9 +33,10 @@
     gyro_odr = <6>;
 };
 
-/ {
-    /delete-node/ pwmleds;
-};
+/delete-node/ &uart0;
+/delete-node/ &uart1;
+/delete-node/ &uart0_default;
+/delete-node/ &uart0_sleep;
 
 / {
     aliases {
@@ -49,18 +50,31 @@
         motor0 = &pwm_motor0;
         motor1 = &pwm_motor1;
  
+        motordir0 = &motor_aphase0;
+        motordir1 = &motor_aphase1;
     };
 
     /delete-node/ pwmleds;
 
     pwm_motor {
         compatible = "pwm-leds";
-        // compatible = "nordic,nrf-pwm";
         pwm_motor0: pwm_motor_0 {
             pwms = < &pwm0 0x0 0x1312d00 0x0 >;
         };
         pwm_motor1: pwm_motor_1 {
             pwms = < &pwm0 0x1 0x1312d00 0x0 >;
+        };
+    };
+
+    motor_gpio {
+        compatible = "gpio-leds";
+        motor_aphase0: motor_aphase_0 {
+            gpios = < &gpio0 0x14 GPIO_ACTIVE_HIGH >;
+            label = "Motor0 direction pin";
+        };
+        motor_aphase1: motor_aphase_1 {
+            gpios = < &gpio0 0x18 GPIO_ACTIVE_HIGH >;
+            label = "Motor1 direction pin";
         };
     };
 
