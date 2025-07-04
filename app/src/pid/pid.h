@@ -45,6 +45,7 @@ class PID {
 			const uint16_t i_pidNum, const bool i_reverse_output = false,
 			const bool i_low_pass_filter = false) :
 		pidParams(i_param),
+		pidParamsInit(i_param),
 		pidIncrement(i_increment),
 		controlSettingMax(i_pidControlMax),
 		param_store(paramRecordKey),
@@ -73,13 +74,10 @@ class PID {
             param_store.set(&pidParams); 
 	}
 
-	void params_erase()
+	void params_reset()
 	{
-#if 0
-            param_store.erase(); 
-#endif
-	    // Don't reinitialize parameters after erasing record in flash storage.
-	    // Perform a device reset or power cycle to reinitialize parameters.
+            param_store.set(&pidParamsInit);
+            pidParams = pidParamsInit;
 	}
 
         void cmd(const PID_CMD_t i_cmd)
@@ -125,8 +123,8 @@ class PID {
 		case PID_CMD_t::PID_PARAMS_SAVE:
 		    params_save();
                     break;
-		case PID_CMD_t::PID_PARAMS_ERASE:
-		    params_erase();
+		case PID_CMD_t::PID_PARAMS_RESET:
+		    params_reset();
                     break;
                 default:
                     break;
@@ -265,6 +263,7 @@ class PID {
 	}
     private:
 	pidParameters_t pidParams;		// local copy of PID parameters
+	pidParameters_t pidParamsInit;		// local copy of PID parameters passed in from init
 	const pidParameters_t pidIncrement;		// local copy of PID Increment values
 	const T controlSettingMax {0};
 	T controlSetting {0};

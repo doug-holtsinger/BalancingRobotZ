@@ -15,8 +15,8 @@ enum class PID_CMD_t : uint8_t
     PID_SP_UP,
     PID_SP_DOWN,
     PID_PARAMS_SAVE,
-    PID_PARAMS_ERASE,
-    CMD_MAX = PID_PARAMS_ERASE
+    PID_PARAMS_RESET,
+    CMD_MAX = PID_PARAMS_RESET
 };
 
 

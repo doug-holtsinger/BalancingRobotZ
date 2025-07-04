@@ -53,7 +53,7 @@ void imu_thread(void *, void *, void *)
     float pitch, yaw;
     int16_t rolli, pitchi, yawi;
     int ret;
-    int debug_cnt = 0;
+    int thread_loop_cnt = 0;
 
     /* allow commands to be sent to the IMU */
     appDemuxRegisterHandler(
@@ -74,11 +74,11 @@ void imu_thread(void *, void *, void *)
     imu.update();
 
     /* start a periodic timer to perform the update */
-    k_timer_start(&imu_update_timer, K_USEC(2403), K_USEC(2403)); 
+    k_timer_start(&imu_update_timer, K_USEC(IMU_UPDATE_INTERVAL_USECS), K_USEC(IMU_UPDATE_INTERVAL_USECS)); 
 
     while (true)
     {
-	if ((debug_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
+	if ((thread_loop_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
 	{
             imu.send_all_client_data();
 	}
@@ -88,7 +88,10 @@ void imu_thread(void *, void *, void *)
         yawi = (int16_t)yaw;
         ble_svcs_send_euler_angles(rolli, pitchi, yawi);
 
-        k_yield();
+	if ((thread_loop_cnt & IMU_THREAD_YIELD_INTERVAL) == 0)
+	{
+            k_yield();
+	}
     }
 }
 

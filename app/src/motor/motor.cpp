@@ -88,7 +88,7 @@ int32_t wheel_encoder = 0;
 void motor_driver_thread(void *, void *, void *)
 {
     float speedControlSP = 0.0;
-    int ble_send_cnt = 0;
+    int thread_loop_cnt = 0;
     PID speedControlPID = PID({SPEED_PID_KP, SPEED_PID_KI, SPEED_PID_KD, SPEED_PID_SP},
            {SPEED_PID_KP_INCR, SPEED_PID_KI_INCR, SPEED_PID_KD_INCR, SPEED_PID_SP_INCR},
             SPEED_PID_CTRL_MAX, SPEED_PID_RECORD_KEY, SPEED_PID_NUM,
@@ -129,12 +129,15 @@ void motor_driver_thread(void *, void *, void *)
         md.setActualRollAngle(get_imu_roll());
         speedControlSP = speedControlPID.update(static_cast<float>(wheel_encoder));
         md.setDesiredRollAngle(speedControlSP);
-	if ((ble_send_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
+	if ((thread_loop_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
 	{
             md.send_all_client_data();
 	}
 
-	k_yield();
+        if ((thread_loop_cnt & MOTOR_THREAD_YIELD_INTERVAL) == 0)
+	{
+	    k_yield();
+	}
     }
 }
 
