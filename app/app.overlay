@@ -14,6 +14,11 @@
 
 &i2c0 {
     compatible = "nordic,nrf-twim";
+    clock-frequency = < 0x61A80 >;
+};
+
+&rtc0 {
+    status = "okay";
 };
 
 &qdec {
@@ -29,7 +34,7 @@
     accel_range = <0>;
     accel_odr = <6>;
     gyro_pm = <0>;
-    gyro_range = <1>;
+    gyro_range = <6>;
     gyro_odr = <6>;
 };
 

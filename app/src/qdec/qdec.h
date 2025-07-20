@@ -13,8 +13,8 @@ class QDEC {
     public:
         QDEC(const struct device* const dev);
         int init();
-        double get_rotation_cumulative();
-        double get_rotation();
+        float get_rotation_cumulative();
+        float get_rotation();
     private:
         const struct device* const qdec_dev; 
         struct sensor_trigger qdec_trig = {

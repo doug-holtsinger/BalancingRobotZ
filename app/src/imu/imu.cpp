@@ -28,6 +28,15 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
 float rollf;
 
+#define NUM_TIME_MEASUREMENTS 5
+
+// #define MEASURE_TIME_DELAYS
+#ifdef MEASURE_TIME_DELAYS
+int32_t time_last[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
+int32_t time_current[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
+int32_t time_dif[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
+#endif
+
 void imu_update_work_handler(struct k_work *work)
 {
     /* do the processing that needs to be done periodically */
@@ -50,10 +59,11 @@ float get_imu_roll(void)
 
 void imu_thread(void *, void *, void *)
 {
-    float pitch, yaw;
+    float l_pitch, l_yaw;
     int16_t rolli, pitchi, yawi;
     int ret;
-    int thread_loop_cnt = 0;
+    int yield_loop_cnt = 32;
+    int ble_loop_cnt = 0;
 
     /* allow commands to be sent to the IMU */
     appDemuxRegisterHandler(
@@ -78,18 +88,27 @@ void imu_thread(void *, void *, void *)
 
     while (true)
     {
-	if ((thread_loop_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
+	if ((ble_loop_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
 	{
             imu.send_all_client_data();
 	}
-        imu.get_angles(rollf, pitch, yaw);
+
+        imu.get_angles(rollf, l_pitch, l_yaw);
         rolli = (int16_t)rollf;
-        pitchi = (int16_t)pitch;
-        yawi = (int16_t)yaw;
+        pitchi = (int16_t)l_pitch;
+        yawi = (int16_t)l_yaw;
+
         ble_svcs_send_euler_angles(rolli, pitchi, yawi);
 
-	if ((thread_loop_cnt & IMU_THREAD_YIELD_INTERVAL) == 0)
+	if ((yield_loop_cnt++ & IMU_THREAD_YIELD_INTERVAL) == 0)
 	{
+#ifdef MEASURE_TIME_DELAYS
+            for (int32_t i=0 ; i < 5 ; i++)
+            {
+	        //LOG_DBG("time %u dif %d max %d min %d curr %d last %d\n", i, time_dif[i], time_max[i], time_min[i], time_current[i], time_last[i]);
+	        LOG_DBG("time %d dif %d\n", i, time_dif[i]);
+	    }
+#endif
             k_yield();
 	}
     }
@@ -191,10 +210,15 @@ int IMU::read_sensors()
 {
     int rc = 0;
 
+#ifdef MEASURE_TIME_DELAYS
+    int32_t time_start = sys_clock_cycle_get_32();
+#endif
+
     /* lsm6dso accel */
     rc = sensor_sample_fetch_chan(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ);
     if (rc) 
     {
+	LOG_ERR("accel fetch rc %d\n", rc);
         return rc;
     }
     if (!data_hold[IMU_ACCELEROMETER])
@@ -202,10 +226,15 @@ int IMU::read_sensors()
         sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ, accelerometer_sens);
     } 
 
+#ifdef MEASURE_TIME_DELAYS
+    time_dif[2] = sys_clock_cycle_get_32() - time_start;
+#endif
+
     /* gyro */
     rc = sensor_sample_fetch_chan(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ);
     if (rc) 
     {
+	LOG_ERR("gyro fetch rc %d\n", rc);
         return rc;
     }
     if (!data_hold[IMU_GYROSCOPE])
@@ -213,10 +242,15 @@ int IMU::read_sensors()
         sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ, gyroscope_sens);
     } 
 
+#ifdef MEASURE_TIME_DELAYS
+    time_dif[3] = sys_clock_cycle_get_32() - time_start;
+#endif
+
     /* magnetometer */
     rc = sensor_sample_fetch_chan(dev_magn, SENSOR_CHAN_ALL);
     if (rc) 
     {
+	LOG_ERR("magn fetch rc %d\n", rc);
         return rc;
     }
     if (!data_hold[IMU_MAGNETOMETER])
@@ -224,12 +258,20 @@ int IMU::read_sensors()
         sensor_channel_get(dev_magn, SENSOR_CHAN_MAGN_XYZ, magnetometer_sens);
     }
 
+#ifdef MEASURE_TIME_DELAYS
+    time_dif[4] = sys_clock_cycle_get_32() - time_start;
+#endif
+
     for (int i=0 ; i<3 ; i++)
     {
         accelerometer_uncal[i] = (uncalibrated_t)sensor_ms2_to_mg(&accelerometer_sens[i]);
         gyroscope_uncal[i] = (uncalibrated_t)sensor_rad_to_10udegrees(&gyroscope_sens[i]);
         magnetometer_uncal[i] = (uncalibrated_t)sensor_gauss_to_mgauss(&magnetometer_sens[i]);
     }
+
+#ifdef MEASURE_TIME_DELAYS
+    time_dif[1] = sys_clock_cycle_get_32() - time_start;
+#endif
 
     return rc;
 }
@@ -273,6 +315,8 @@ int IMU::set_sampling_freq()
         LOG_ERR("Error setting accel/gyro attr %d %d", rc, __LINE__);
         return rc;
     }
+
+    // Magnetometer settings are configured using Kconfig
 
     return rc;
 }
@@ -703,6 +747,12 @@ void IMU::MeasureODR()
 
 void IMU::update(void)
 {
+#ifdef MEASURE_TIME_DELAYS
+    time_last[0]  = time_current[0]; 
+    time_current[0] = sys_clock_cycle_get_32();
+    time_dif[0] = time_current[0] - time_last[0];
+#endif
+
     if (!read_sensors())
     {
 	switch (calibrate_enable)

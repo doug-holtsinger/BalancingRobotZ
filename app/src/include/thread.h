@@ -14,7 +14,7 @@
 /*
  *  Thread yield intervals
  */
-#define IMU_THREAD_YIELD_INTERVAL 0x7F
+#define IMU_THREAD_YIELD_INTERVAL 0xFFF
 #define MOTOR_THREAD_YIELD_INTERVAL 0x7F
 
 /* Lowest priority thread -- blink the LED */

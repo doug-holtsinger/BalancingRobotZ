@@ -11,10 +11,11 @@ LOG_MODULE_REGISTER(QDEC, CONFIG_SENSOR_LOG_LEVEL);
 #ifdef __cplusplus
 extern "C" {
 #endif
+    // number of degrees that the wheel has turned.
+    float rotation_cumulative = 0.0;
+
     // number of degrees that the wheel has turned since last trigger.
-    static double rotation = 0.0;
-    // number of degrees that the wheel has turned since last read.
-    static double rotation_cumulative = 0.0;
+    static float rotation = 0.0;
 
     static void qdec_trigger_handler(const struct device *dev,
                                 const struct sensor_trigger *trigger)
@@ -39,8 +40,11 @@ extern "C" {
 
 	rotation = sensor_value_to_float(&qdec_sens);
 	rotation_cumulative += rotation;
-        // LOG_DBG("qdec val1 %d val2 %d crot %f trot %f\n", qdec_sens.val1, qdec_sens.val2, rotation, rotation_cumulative);
+#if 0
+        LOG_DBG("qdec val1 %d val2 %d rot %f crot %f\n", qdec_sens.val1, qdec_sens.val2, 
+			static_cast<double>(rotation), static_cast<double>(rotation_cumulative));
 
+#endif
     }
 #ifdef __cplusplus
 }
@@ -63,12 +67,12 @@ int QDEC::init()
     return rc;
 }
 
-double QDEC::get_rotation_cumulative()
+float QDEC::get_rotation_cumulative()
 {
 	return rotation_cumulative;
 }
 
-double QDEC::get_rotation()
+float QDEC::get_rotation()
 {
 	return rotation;
 }

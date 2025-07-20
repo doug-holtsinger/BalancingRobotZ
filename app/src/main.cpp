@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 /* The devicetree node identifier for the "led0" alias. */
 /* led2 is the Green LED */
 #define LED0_NODE DT_ALIAS(led2)
-#define SLEEP_TIME_MS   3000
+#define SLEEP_TIME_MS   2000
 #define LED_THREAD_STACK_SIZE 2048
 
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);

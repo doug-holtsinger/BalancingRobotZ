@@ -2,8 +2,10 @@
 #define __AHRS_H__
 
 #include "imu_cmd.h"
+#include "imu_hw.h"
 
-#define sampleFreqDef    416.0f   // sample frequency in Hz
+// #define sampleFreqDef    416.0f   // sample frequency in Hz
+#define sampleFreqDef    ((float)AHRS_SAMPLE_FREQ)
 
 typedef enum
 {

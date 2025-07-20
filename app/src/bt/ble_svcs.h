@@ -14,10 +14,5 @@ int send_client_data(char* p_str);
 typedef void (*nus_data_handler_t)(const APP_CMD_t data);
 void ble_svcs_register(nus_data_handler_t data_handler_fn);
 bool ble_svcs_connected();
-#if 0
-void ble_svcs_cmd(BLE_CMD_t ble_cmd, uint16_t data);
-void ble_svcs_event_handler(bsp_event_t event);
-void ble_svcs_advertising_start(void);
-#endif
 
 #endif

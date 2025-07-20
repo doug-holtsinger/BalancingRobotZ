@@ -159,6 +159,11 @@ MotorDriver::MotorDriver() :
 void MotorDriver::setActualRollAngle(float i_roll)
 {
     drv_ctrla = pidCtrl.update(i_roll);
+    // Limit the drive to a value to prevent the motor from running at max speed
+    if (drv_ctrla > MOTOR_DRIVER_MAX_VALUE)
+        drv_ctrla = MOTOR_DRIVER_MAX_VALUE;
+    if (drv_ctrla < -MOTOR_DRIVER_MAX_VALUE)
+        drv_ctrla = -MOTOR_DRIVER_MAX_VALUE;
     // motors spin in opposite directions
     drv_ctrlb = -drv_ctrla;
     if (motor_enabled && abs(i_roll) > MOTOR_DISABLE_ROLL_ANGLE)

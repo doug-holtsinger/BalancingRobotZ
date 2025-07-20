@@ -6,6 +6,7 @@ target_include_directories(app PRIVATE qdec)
 target_include_directories(app PRIVATE app_demux)
 target_include_directories(app PRIVATE param_store)
 target_include_directories(app PRIVATE motor)
+target_include_directories(app PRIVATE perf)
 
 target_sources(app PRIVATE main.cpp)
 
@@ -16,4 +17,5 @@ add_subdirectory(qdec)
 add_subdirectory(app_demux)
 add_subdirectory(param_store)
 add_subdirectory(motor)
+add_subdirectory(perf)
 
