@@ -14,6 +14,6 @@ constexpr float MOTOR_DISABLE_ROLL_ANGLE = 25.0;
 constexpr float MOTOR_DISABLE_ROLL_ANGLE = 999.0;
 #endif
 constexpr pwm_top_value_t MOTOR_DRIVER_TOP_VALUE = 8192;
-constexpr pwm_top_value_t MOTOR_DRIVER_MAX_VALUE = 3500;
+constexpr pwm_top_value_t MOTOR_DRIVER_MAX_VALUE = 8191;
 
 #endif

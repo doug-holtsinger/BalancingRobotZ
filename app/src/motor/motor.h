@@ -41,7 +41,7 @@ constexpr uint32_t PWM_CLK_PERIOD_500kHz = (PWM_CLK_PERIOD_1MHz*2);
 constexpr uint32_t PWM_CLK_PERIOD_250kHz = (PWM_CLK_PERIOD_500kHz*2);
 constexpr uint32_t PWM_CLK_PERIOD_125kHz = (PWM_CLK_PERIOD_250kHz*2);
 
-#if 1
+#if 0
 constexpr bool MOTOR_ENABLE_DEFAULT = false;
 #else
 constexpr bool MOTOR_ENABLE_DEFAULT = true;

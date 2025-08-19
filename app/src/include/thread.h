@@ -4,12 +4,14 @@
 
 /* normal running priority for a thread */
 #define NORMAL_THREAD_PRIORITY 4
+#define IMU_THREAD_PRIORITY 4
+#define MOTOR_DRIVER_THREAD_PRIORITY 4
 
 /* Initial thread priorities, 
   changed to normal thread priorities after initial execution 
   of the thread */
-#define IMU_THREAD_PRIORITY (NORMAL_THREAD_PRIORITY-2)
-#define MOTOR_DRIVER_THREAD_PRIORITY (NORMAL_THREAD_PRIORITY-1)
+#define IMU_THREAD_PRIORITY_INITIAL 	(NORMAL_THREAD_PRIORITY-2)
+#define MOTOR_DRIVER_THREAD_PRIORITY_INITIAL (NORMAL_THREAD_PRIORITY-1)
 
 /*
  *  Thread yield intervals

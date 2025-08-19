@@ -26,11 +26,11 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 #define IMU_THREAD_STACK_SIZE 2048
 
 IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
-float rollf;
+static float rollf;
 
 #define NUM_TIME_MEASUREMENTS 5
 
-// #define MEASURE_TIME_DELAYS
+#define MEASURE_TIME_DELAYS
 #ifdef MEASURE_TIME_DELAYS
 int32_t time_last[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
 int32_t time_current[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
@@ -103,7 +103,7 @@ void imu_thread(void *, void *, void *)
 	if ((yield_loop_cnt++ & IMU_THREAD_YIELD_INTERVAL) == 0)
 	{
 #ifdef MEASURE_TIME_DELAYS
-            for (int32_t i=0 ; i < 5 ; i++)
+            for (int32_t i=0 ; i < NUM_TIME_MEASUREMENTS ; i++)
             {
 	        //LOG_DBG("time %u dif %d max %d min %d curr %d last %d\n", i, time_dif[i], time_max[i], time_min[i], time_current[i], time_last[i]);
 	        LOG_DBG("time %d dif %d\n", i, time_dif[i]);
@@ -116,7 +116,7 @@ void imu_thread(void *, void *, void *)
 
 K_THREAD_DEFINE(imu_tid, IMU_THREAD_STACK_SIZE,
                 imu_thread, NULL, NULL, NULL,
-                IMU_THREAD_PRIORITY, K_ESSENTIAL|K_FP_REGS, 0);
+                IMU_THREAD_PRIORITY_INITIAL, K_ESSENTIAL|K_FP_REGS, 0);
 
 IMU::IMU( const struct device *const dev_accelerometer_gyroscope, const struct device *const dev_magnetometer, 
 		const uint16_t param_store_id) :
