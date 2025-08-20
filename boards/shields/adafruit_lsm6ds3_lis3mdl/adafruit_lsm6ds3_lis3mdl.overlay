@@ -1,6 +1,6 @@
 &i2c0 {
-    lis3mdl: lis3mdl-magn@1c {
-        compatible = "st,lis3mdl-magn";
+    lis3mdlz: lis3mdlz-magn@1c {
+        compatible = "st,lis3mdlz-magn";
         friendly-name = "LIS3MDL Magnetometer";
         reg = <0x1c>;
     };

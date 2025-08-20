@@ -25,7 +25,7 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 
 #define IMU_THREAD_STACK_SIZE 2048
 
-IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdl_magn), IMU_RECORD_KEY);
+IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdlz_magn), IMU_RECORD_KEY);
 static float rollf;
 
 #define NUM_TIME_MEASUREMENTS 5
@@ -247,7 +247,7 @@ int IMU::read_sensors()
 #endif
 
     /* magnetometer */
-    rc = sensor_sample_fetch_chan(dev_magn, SENSOR_CHAN_ALL);
+    rc = sensor_sample_fetch_chan(dev_magn, SENSOR_CHAN_MAGN_XYZ);
     if (rc) 
     {
 	LOG_ERR("magn fetch rc %d\n", rc);
