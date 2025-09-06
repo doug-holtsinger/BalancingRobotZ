@@ -30,7 +30,7 @@ static float rollf;
 
 #define NUM_TIME_MEASUREMENTS 5
 
-#define MEASURE_TIME_DELAYS
+// #define MEASURE_TIME_DELAYS
 #ifdef MEASURE_TIME_DELAYS
 int32_t time_last[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
 int32_t time_current[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
@@ -176,15 +176,18 @@ void IMU::init_params(imu_calibration_params_t params)
     {
         cp.magnetometer_min[i] = params.magnetometer_min[i];
         cp.magnetometer_max[i] = params.magnetometer_max[i];
+        cp.magnetometer_zero_offset[i] = params.magnetometer_zero_offset[i];
         cp.magnetometer_min_threshold[i] = params.magnetometer_min_threshold[i];
         cp.magnetometer_uncal_last[i] = params.magnetometer_uncal_last[i];
 
         cp.gyroscope_min[i] = params.gyroscope_min[i];
         cp.gyroscope_max[i] = params.gyroscope_max[i];
+        cp.gyroscope_zero_offset[i] = params.gyroscope_zero_offset[i];
         cp.gyroscope_min_threshold[i] = params.gyroscope_min_threshold[i];
 
         cp.accelerometer_min[i] = params.accelerometer_min[i];
         cp.accelerometer_max[i] = params.accelerometer_max[i];
+        cp.accelerometer_zero_offset[i] = params.accelerometer_zero_offset[i];
         cp.accelerometer_min_threshold[i] = params.accelerometer_min_threshold[i];
     }
 }
@@ -266,6 +269,7 @@ int IMU::read_sensors()
     {
         accelerometer_uncal[i] = (uncalibrated_t)sensor_ms2_to_mg(&accelerometer_sens[i]);
         gyroscope_uncal[i] = (uncalibrated_t)sensor_rad_to_10udegrees(&gyroscope_sens[i]);
+	//LOG_DBG("gyro[%d] uncal %d sens %d %d", i, gyroscope_uncal[i], gyroscope_sens[i].val1, gyroscope_sens[i].val2);
         magnetometer_uncal[i] = (uncalibrated_t)sensor_gauss_to_mgauss(&magnetometer_sens[i]);
     }
 
@@ -327,16 +331,25 @@ void IMU::calibrate_magnetometer(void)
     //  magnetometer calibration -- done while rotating in X / Y /  Z axis
     //
     for (int i = 0 ; i < 3 ; i++) {
+	bool new_offset = true;
         if (cp.magnetometer_min[i] == 0 && cp.magnetometer_max[i] == 0)
         {
             cp.magnetometer_min[i] = cp.magnetometer_max[i] = cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
+	    LOG_DBG("magn min/max[%d] = %d", i, cp.magnetometer_min[i]);
         } else if (magnetometer_uncal[i] < cp.magnetometer_min[i])
         {
             cp.magnetometer_min[i] = cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
+	    LOG_DBG("magn min[%d] = %d", i, cp.magnetometer_min[i]);
         } else if (magnetometer_uncal[i] > cp.magnetometer_max[i])
         {
             cp.magnetometer_max[i] = cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
+	    LOG_DBG("magn max[%d] = %d", i, cp.magnetometer_max[i]);
         }
+        cp.magnetometer_zero_offset[i] = (cp.magnetometer_max[i] + cp.magnetometer_min[i]) / 2;
+	if (new_offset)
+	{
+	    LOG_DBG("magn offset[%d] = %d", i, cp.magnetometer_zero_offset[i]);
+	}
     }
 }
 
@@ -362,20 +375,32 @@ void IMU::calibrate_zero_offset(void)
     //
     for (int i=0 ; i<3 ; i++)
     {
+	bool new_offset = false;
         if (cp.gyroscope_min[i] == 0 && cp.gyroscope_max[i] == 0)
         {
             cp.gyroscope_min[i] = cp.gyroscope_max[i] = gyroscope_uncal[i];
+	    new_offset = true;
+	    LOG_DBG("gyro min/max[%d] = %d", i, gyroscope_uncal[i]);
         } else if (gyroscope_uncal[i] < cp.gyroscope_min[i])
         {
             cp.gyroscope_min[i] = gyroscope_uncal[i];
+	    new_offset = true;
+	    LOG_DBG("gyro min[%d] = %d", i, gyroscope_uncal[i]);
         } else if (gyroscope_uncal[i] > cp.gyroscope_max[i])
         {
             cp.gyroscope_max[i] = gyroscope_uncal[i];
+	    new_offset = true;
+	    LOG_DBG("gyro max[%d] = %d", i, gyroscope_uncal[i]);
         }
-        noise_threshold = noise_threshold_mult[IMU_GYROSCOPE] * abs ( gyroscope_uncal[i] - ((cp.gyroscope_max[i] + cp.gyroscope_min[i]) / 2) ); 
+	cp.gyroscope_zero_offset[i] = (cp.gyroscope_max[i] + cp.gyroscope_min[i]) / 2;
+	if (new_offset)
+	    LOG_DBG("gyro offset[%d] = %d", i, cp.gyroscope_zero_offset[i]);
+	// subtract gyroscope zero offset from current reading to find noise threshold
+        noise_threshold = noise_threshold_mult[IMU_GYROSCOPE] * abs ( gyroscope_uncal[i] - cp.gyroscope_zero_offset[i] );
         if (noise_threshold > cp.gyroscope_min_threshold[i])
         {
             cp.gyroscope_min_threshold[i] = noise_threshold;
+	    LOG_DBG("gyro min thres[%d] = %u", i, noise_threshold);
         }
     }
 
@@ -384,6 +409,7 @@ void IMU::calibrate_zero_offset(void)
     // IMU Z axis pointing up.
     //
     for (int i=0 ; i<3 ; i++) {
+	bool new_offset = false;
         if (i == 2)
         {
             accelerometer_bias = 1000;    // 1G bias in Z direction in milli-G units
@@ -394,14 +420,25 @@ void IMU::calibrate_zero_offset(void)
         if (cp.accelerometer_min[i] == 0 && cp.accelerometer_max[i] == 0)
         {
             cp.accelerometer_min[i] = cp.accelerometer_max[i] = (accelerometer_uncal[i] - accelerometer_bias);
+	    new_offset = true;
+	    LOG_DBG("accel min/max[%d] = %d", i, cp.accelerometer_min[i]);
         } else if ((accelerometer_uncal[i] - accelerometer_bias) < cp.accelerometer_min[i])
         {
             cp.accelerometer_min[i] = accelerometer_uncal[i] - accelerometer_bias;
+	    new_offset = true;
+	    LOG_DBG("accel min[%d] = %d", i, cp.accelerometer_min[i]);
         } else if ((accelerometer_uncal[i] - accelerometer_bias) > cp.accelerometer_max[i])
         {
             cp.accelerometer_max[i] = accelerometer_uncal[i] - accelerometer_bias;
+	    new_offset = true;
+	    LOG_DBG("accel max[%d] = %d", i, cp.accelerometer_max[i]);
         }
-        noise_threshold = noise_threshold_mult[IMU_ACCELEROMETER] * abs( accelerometer_uncal[i] - ((cp.accelerometer_max[i] + cp.accelerometer_min[i]) / 2) - accelerometer_bias);
+        cp.accelerometer_zero_offset[i] = (cp.accelerometer_max[i] + cp.accelerometer_min[i]) / 2;
+	if (new_offset)
+	{
+	    LOG_DBG("accel offset[%d] = %d", i, cp.accelerometer_zero_offset[i]);
+	}
+        noise_threshold = noise_threshold_mult[IMU_ACCELEROMETER] * abs(accelerometer_uncal[i] - cp.accelerometer_zero_offset[i] - accelerometer_bias);
         if (noise_threshold > cp.accelerometer_min_threshold[i])
         {
             cp.accelerometer_min_threshold[i] = noise_threshold;
@@ -422,12 +459,12 @@ void IMU::reset_calibration(void)
     // FIXME -- reset AHRS settings, like gyro sensitivity, as well
     for (int i = 0 ; i < 3 ; i++)
     {
-        cp.magnetometer_min[i] = cp.magnetometer_max[i] = cp.magnetometer_min_threshold[i] = 0;
+        cp.magnetometer_min[i] = cp.magnetometer_max[i] = cp.magnetometer_zero_offset[i] = cp.magnetometer_min_threshold[i] = 0;
         cp.magnetometer_uncal_last[i] = 0;
 
-        cp.gyroscope_min[i] = cp.gyroscope_max[i] = cp.gyroscope_min_threshold[i] = 0;
+        cp.gyroscope_min[i] = cp.gyroscope_max[i] = cp.gyroscope_zero_offset[i] = cp.gyroscope_min_threshold[i] = 0;
 
-        cp.accelerometer_min[i] = cp.accelerometer_max[i] = cp.accelerometer_min_threshold[i] = 0;
+        cp.accelerometer_min[i] = cp.accelerometer_max[i] = cp.accelerometer_zero_offset[i] = cp.accelerometer_min_threshold[i] = 0;
     }
 }
 
@@ -437,13 +474,14 @@ void IMU::calibrate_data(void)
 
     // calibrate raw data values using zero offset and min thresholds.
     for (int i = 0 ; i < 3 ; i++) {
-        accelerometer_cal[i] = accelerometer_uncal[i] - ((cp.accelerometer_max[i] + cp.accelerometer_min[i]) / 2);
+        accelerometer_cal[i] = accelerometer_uncal[i] - cp.accelerometer_zero_offset[i];
         if ((uint32_t)abs(accelerometer_cal[i]) < cp.accelerometer_min_threshold[i])
         {
             accelerometer_cal[i] = 0;
         }
 
-        gyroscope_cal_before_correction[i] = ( gyroscope_uncal[i] - ((cp.gyroscope_max[i] + cp.gyroscope_min[i]) / 2) );
+	// subtract gyroscope zero offset
+        gyroscope_cal_before_correction[i] = gyroscope_uncal[i] - cp.gyroscope_zero_offset[i];
 	gyroscope_cal_before_correction_abs[i] = abs(gyroscope_cal_before_correction[i]);
         if ( gyroscope_cal_before_correction_abs[i] < cp.gyroscope_min_threshold[i] )
         {
@@ -456,10 +494,10 @@ void IMU::calibrate_data(void)
         magnetometer_diff = abs(magnetometer_uncal[i] - cp.magnetometer_uncal_last[i]);
         if (cp.magnetometer_stability && magnetometer_diff < cp.magnetometer_min_threshold[i])
         {
-            magnetometer_cal[i] = cp.magnetometer_uncal_last[i] - ((cp.magnetometer_max[i] + cp.magnetometer_min[i]) / 2);
+            magnetometer_cal[i] = cp.magnetometer_uncal_last[i] - cp.magnetometer_zero_offset[i]; 
         } else
         {
-            magnetometer_cal[i] = magnetometer_uncal[i] - ((cp.magnetometer_max[i] + cp.magnetometer_min[i]) / 2);
+            magnetometer_cal[i] = magnetometer_uncal[i] - cp.magnetometer_zero_offset[i];
         }
         cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
     }
@@ -597,12 +635,28 @@ void IMU::send_all_client_data()
 
         if (uncalibrated_display)
         {
+#if 0
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d %04d %04d %04d",
                 GYROSCOPE_UNCAL,
                 (int)gyroscope_uncal[0],
                 (int)gyroscope_uncal[1],
                 (int)gyroscope_uncal[2]
                 );
+#else
+	    for (int i=0 ; i<3 ; i++)
+	    {
+                // convert from 10micro degrees/sec to radians/sec.
+                //gyroscope_uncal_rad[i] = gyroscope_uncal[i] / (DEGREES_PER_RADIAN * MICRO10DEGREES_PER_DEGREE);
+                // convert from 10micro degrees/sec to degrees/sec.
+                gyroscope_uncal_deg[i] = gyroscope_uncal[i] / MICRO10DEGREES_PER_DEGREE;
+	    }
+            snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 ,
+                GYROSCOPE_UNCAL,
+                PRINTF_FLOAT_VALUE(gyroscope_uncal_deg[0]),
+                PRINTF_FLOAT_VALUE(gyroscope_uncal_deg[1]),
+                PRINTF_FLOAT_VALUE(gyroscope_uncal_deg[2])
+                );
+#endif
             send_client_data(s);
     
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT PRINTF_FLOAT_FORMAT PRINTF_FLOAT_FORMAT ,

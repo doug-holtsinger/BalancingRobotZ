@@ -14,9 +14,10 @@
 
 
 
-#define PRINTF_FLOAT_FORMAT " %d.%01d"
-#define PRINTF_FLOAT_VALUE(val) (int32_t)(val),                                  \
-                           (int32_t)((((val) > 0) ? (val) - (int32_t)(val)       \
+#define PRINTF_FLOAT_FORMAT " %s%d.%01d"
+#define PRINTF_FLOAT_VALUE(val)  (((val) < 0 && (val) > -1.0f) ? "-" : ""),       \
+	                         (int32_t)(val),                                  \
+                                 (int32_t)((((val) > 0) ? (val) - (int32_t)(val)  \
                                                 : (int32_t)(val) - (val))*10)
 
 #define PRINTF_FLOAT_FORMAT2 " %s%d.%02d"
