@@ -51,6 +51,8 @@ struct lsm6ds3tr_c_config {
 	uint8_t int_pin;
 	bool trig_enabled;
 #endif /* CONFIG_LSM6DS3TR_C_TRIGGER */
+	bool accel_lpf2_enable;
+	uint8_t input_composite;
 };
 
 struct lsm6ds3tr_c_data {

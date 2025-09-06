@@ -17,6 +17,17 @@ LOG_MODULE_REGISTER(LSM6DS3TR_C, CONFIG_SENSOR_LOG_LEVEL);
 static const uint16_t lsm6ds3tr_c_odr_map[] = {0, 12, 26, 52, 104, 208, 417, 833,
 					1667, 3333, 6667};
 
+static const lsm6ds3tr_c_input_composite_t lsm6ds3tr_c_input_composite_map[] = {
+  LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_50,
+  LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_100,
+  LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_9,
+  LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_400,
+  LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_50,
+  LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_100,
+  LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_9,
+  LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_400
+};
+
 static int lsm6ds3tr_c_freq_to_odr_val(uint16_t freq)
 {
 	size_t i;
@@ -207,6 +218,22 @@ static int lsm6ds3tr_c_accel_config(const struct device *dev,
 	return 0;
 }
 
+static int lsm6ds3tr_c_accel_set_lp2_bandwidth(const struct device *dev, uint8_t val)
+{
+	const struct lsm6ds3tr_c_config *cfg = dev->config;
+	stmdev_ctx_t *ctx = (stmdev_ctx_t *)&cfg->ctx;
+
+        if (val < sizeof(lsm6ds3tr_c_input_composite_map)) {
+            lsm6ds3tr_c_input_composite_t input_composite = lsm6ds3tr_c_input_composite_map[val];
+	    if (lsm6ds3tr_c_xl_lp2_bandwidth_set(ctx, input_composite) < 0) {
+                return -EIO;
+            }
+        } else {
+            return -EIO;
+	}
+	return 0;
+}
+
 static int lsm6ds3tr_c_gyro_odr_set(const struct device *dev, uint16_t freq)
 {
 	int odr;
@@ -306,7 +333,6 @@ static int lsm6ds3tr_c_sample_fetch_gyro(const struct device *dev)
 		LOG_DBG("Failed to read sample");
 		return -EIO;
 	}
-
 	return 0;
 }
 
@@ -525,6 +551,14 @@ static int lsm6ds3tr_c_init_chip(const struct device *dev)
 		return -EIO;
 	}
 
+	if (cfg->accel_lpf2_enable) {
+	    LOG_DBG("accel input composite is %d", cfg->input_composite);
+            if (lsm6ds3tr_c_accel_set_lp2_bandwidth(dev, cfg->input_composite) < 0) {
+                LOG_ERR("failed to set accelerometer lp2 %d", cfg->input_composite);
+		return -EIO;
+            }
+	}
+
 	/* set gyro power mode */
 	LOG_DBG("gyro pm is %d", cfg->gyro_pm);
 	switch (cfg->gyro_pm) {
@@ -562,6 +596,11 @@ static int lsm6ds3tr_c_init_chip(const struct device *dev)
 	if (lsm6ds3tr_c_block_data_update_set(ctx, 1) < 0) {
 		LOG_DBG("failed to set BDU mode");
 		return -EIO;
+	}
+
+	lsm6ds3tr_c_input_composite_t tmp;
+	if (lsm6ds3tr_c_xl_lp2_bandwidth_get(ctx, &tmp) == 0) {
+            LOG_DBG("lp2 bw is %u", tmp);
 	}
 
 	return 0;
@@ -637,6 +676,8 @@ static int lsm6ds3tr_c_init(const struct device *dev)
 	.accel_range = DT_INST_PROP(inst, accel_range) |		\
 		(DT_INST_NODE_HAS_COMPAT(inst, st_lsm6ds3tr_c32) ?	        \
 			ACCEL_RANGE_DOUBLE : 0),			\
+	.input_composite = DT_INST_PROP(inst, input_composite),			\
+	.accel_lpf2_enable = DT_INST_PROP(inst, accel_lpf2_enable),			\
 	.gyro_pm = DT_INST_PROP(inst, gyro_pm),				\
 	.gyro_odr = DT_INST_PROP(inst, gyro_odr),			\
 	.gyro_range = DT_INST_PROP(inst, gyro_range),			\

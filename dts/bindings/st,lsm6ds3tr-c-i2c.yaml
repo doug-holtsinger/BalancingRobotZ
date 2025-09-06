@@ -65,6 +65,34 @@ properties:
       - 9
       - 10
 
+  accel_lpf2_enable:
+    type: boolean
+    description: |
+      Enables the LPF2 (Low Pass Filter2)
+
+  input_composite:
+    type: int
+    default: 0
+    description: |
+      Specify the input_composite settings when accel_lpf2-enable is enabled.
+      - 0  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_50 
+      - 1  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_100
+      - 2  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_9
+      - 3  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_400
+      - 4  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_50
+      - 5  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_100
+      - 6  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_9
+      - 7  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_400
+    enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+
   gyro_pm:
     type: int
     default: 0
