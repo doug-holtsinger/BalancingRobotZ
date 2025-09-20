@@ -64,6 +64,9 @@ LOG_MODULE_REGISTER(MOTOR, CONFIG_SENSOR_LOG_LEVEL);
 #include "pid.h"
 #include "pid_num.h"
 
+#include "perf.h"
+#include <math.h>
+
 #define MOTOR_DRIVER_THREAD_STACK_SIZE 2048
 
 constexpr float SPEED_PID_KP = 0.02;
@@ -206,6 +209,10 @@ void MotorDriver::setValues(pid_ctrl_t driver0, pid_ctrl_t driver1)
     } else {
         gpio_pin_set_dt(&motor_direction[1], 0);
     }
+
+#ifdef MEASURE_TIME_DELAYS
+    perf_end_int(4, driver0, 200);
+#endif
 
     pwm_pulse0_ns = abs(driver0) * pwm_period_ns / MOTOR_DRIVER_TOP_VALUE;
     pwm_pulse1_ns = abs(driver1) * pwm_period_ns / MOTOR_DRIVER_TOP_VALUE;

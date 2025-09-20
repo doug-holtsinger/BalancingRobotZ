@@ -26,6 +26,8 @@
 #include "logdef.h"
 #include "ble_svcs.h"
 
+#include "perf.h"
+
 //====================================================================================================
 // Functions
 
@@ -221,6 +223,10 @@ void MahonyAHRS::update(float gx, float gy, float gz, float ax, float ay, float 
     q1X = q1;
     q2X = q2;
     q3X = q3;
+#ifdef MEASURE_TIME_DELAYS
+    perf_end(1, q1X, 0.01);
+    perf_start(2, q1X, 0.01);
+#endif
 }
 
 

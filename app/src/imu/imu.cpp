@@ -3,6 +3,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
+#include <math.h>
 
 LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 
@@ -23,19 +24,12 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 #include "param_store.h"
 #include "param_store_ids.h"
 
+#include "perf.h"
+
 #define IMU_THREAD_STACK_SIZE 2048
 
 IMU imu = IMU(DEVICE_DT_GET_ONE(st_lsm6ds3tr_c), DEVICE_DT_GET_ONE(st_lis3mdlz_magn), IMU_RECORD_KEY);
 static float rollf;
-
-#define NUM_TIME_MEASUREMENTS 5
-
-// #define MEASURE_TIME_DELAYS
-#ifdef MEASURE_TIME_DELAYS
-int32_t time_last[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
-int32_t time_current[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
-int32_t time_dif[NUM_TIME_MEASUREMENTS] = {0L,0L,0L,0L,0L};
-#endif
 
 void imu_update_work_handler(struct k_work *work)
 {
@@ -100,14 +94,15 @@ void imu_thread(void *, void *, void *)
 
         ble_svcs_send_euler_angles(rolli, pitchi, yawi);
 
+#ifdef MEASURE_TIME_DELAYS
+	perf_print();
+#endif
+
 	if ((yield_loop_cnt++ & IMU_THREAD_YIELD_INTERVAL) == 0)
 	{
 #ifdef MEASURE_TIME_DELAYS
-            for (int32_t i=0 ; i < NUM_TIME_MEASUREMENTS ; i++)
-            {
-	        //LOG_DBG("time %u dif %d max %d min %d curr %d last %d\n", i, time_dif[i], time_max[i], time_min[i], time_current[i], time_last[i]);
-	        LOG_DBG("time %d dif %d\n", i, time_dif[i]);
-	    }
+            perf_end(3, rollf, 1.0);
+            perf_start(4, rollf, 1.0);
 #endif
             k_yield();
 	}
@@ -213,10 +208,6 @@ int IMU::read_sensors()
 {
     int rc = 0;
 
-#ifdef MEASURE_TIME_DELAYS
-    int32_t time_start = sys_clock_cycle_get_32();
-#endif
-
     /* lsm6dso accel */
     rc = sensor_sample_fetch_chan(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ);
     if (rc) 
@@ -228,10 +219,6 @@ int IMU::read_sensors()
     {
         sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_ACCEL_XYZ, accelerometer_sens);
     } 
-
-#ifdef MEASURE_TIME_DELAYS
-    time_dif[2] = sys_clock_cycle_get_32() - time_start;
-#endif
 
     /* gyro */
     rc = sensor_sample_fetch_chan(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ);
@@ -245,10 +232,6 @@ int IMU::read_sensors()
         sensor_channel_get(dev_accel_gyro, SENSOR_CHAN_GYRO_XYZ, gyroscope_sens);
     } 
 
-#ifdef MEASURE_TIME_DELAYS
-    time_dif[3] = sys_clock_cycle_get_32() - time_start;
-#endif
-
     /* magnetometer */
     rc = sensor_sample_fetch_chan(dev_magn, SENSOR_CHAN_MAGN_XYZ);
     if (rc) 
@@ -261,10 +244,6 @@ int IMU::read_sensors()
         sensor_channel_get(dev_magn, SENSOR_CHAN_MAGN_XYZ, magnetometer_sens);
     }
 
-#ifdef MEASURE_TIME_DELAYS
-    time_dif[4] = sys_clock_cycle_get_32() - time_start;
-#endif
-
     for (int i=0 ; i<3 ; i++)
     {
         accelerometer_uncal[i] = (uncalibrated_t)sensor_ms2_to_mg(&accelerometer_sens[i]);
@@ -274,7 +253,7 @@ int IMU::read_sensors()
     }
 
 #ifdef MEASURE_TIME_DELAYS
-    time_dif[1] = sys_clock_cycle_get_32() - time_start;
+    //perf_start(0, accelerometer_uncal[1], 50.0);
 #endif
 
     return rc;
@@ -501,6 +480,10 @@ void IMU::calibrate_data(void)
         }
         cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
     }
+#ifdef MEASURE_TIME_DELAYS
+    //perf_end(0, accelerometer_cal[1], 50.0);
+    perf_start(1, accelerometer_cal[1], 50.0);
+#endif
 }
 
 void IMU::get_angles(float& o_roll, float& o_pitch, float& o_yaw)
@@ -516,7 +499,7 @@ void IMU::compute_angles()
     {
 	float axN, ayN, azN;
         AHRSptr->GetNormalizedVectors(IMU_ACCELEROMETER, axN, ayN, azN);
-	if ( abs(axN) < 0.1 && abs(ayN) < 0.1 )
+	if ( fabsf(axN) < 0.1f && fabsf(ayN) < 0.1f )
 	{
             accelerometer_cal[X_AXIS] = accelerometer_cal[Y_AXIS] = 0.0f;
 	    if (accelerometer_cal[Z_AXIS] < 0.0)
@@ -526,7 +509,7 @@ void IMU::compute_angles()
                 accelerometer_cal[Z_AXIS] = 1000.0f;
 	    }
 	}
-	if ( abs(ayN) < 0.1 && abs(azN) < 0.1 )
+	if ( fabsf(ayN) < 0.1f && fabsf(azN) < 0.1f )
 	{
             accelerometer_cal[Y_AXIS] = accelerometer_cal[Z_AXIS] = 0.0f;
 	    if (accelerometer_cal[X_AXIS] < 0.0)
@@ -536,7 +519,7 @@ void IMU::compute_angles()
                 accelerometer_cal[X_AXIS] = 1000.0f;
 	    }
 	}
-	if ( abs(axN) < 0.1 && abs(azN) < 0.1 )
+	if ( fabsf(axN) < 0.1f && fabsf(azN) < 0.1f )
 	{
             accelerometer_cal[X_AXIS] = accelerometer_cal[Z_AXIS] = 0.0f;
 	    if (accelerometer_cal[Y_AXIS] < 0.0)
@@ -574,6 +557,11 @@ void IMU::compute_angles()
 		    (float)magnetometer_cal[2]);
 
     AHRSptr->compute_angles(roll, pitch, yaw);
+
+#ifdef MEASURE_TIME_DELAYS
+    perf_end(2, roll, 1.0);
+    perf_start(3, roll, 1.0);
+#endif
 }
 
 void IMU::send_all_client_data()
@@ -802,9 +790,8 @@ void IMU::MeasureODR()
 void IMU::update(void)
 {
 #ifdef MEASURE_TIME_DELAYS
-    time_last[0]  = time_current[0]; 
-    time_current[0] = sys_clock_cycle_get_32();
-    time_dif[0] = time_current[0] - time_last[0];
+    //perf_end(0, 0.0, 0.0);
+    //perf_start(0, 0.0, 0.0);
 #endif
 
     if (!read_sensors())

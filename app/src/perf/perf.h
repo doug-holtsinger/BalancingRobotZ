@@ -1,20 +1,16 @@
-
 #ifndef __PERF__H
 #define __PERF__H
 
-#include "motor_cfg.h"
+#define NUM_TIME_MEASUREMENTS 5
 
-constexpr float roll_max = MOTOR_DISABLE_ROLL_ANGLE; 
+//#define MEASURE_TIME_DELAYS
 
-class Perf {
-    public:
-        void update(float roll, pid_ctrl_t pidCtrlValue, int32_t wheel_encoder_speed);
-        void send_all_client_data();
-    private:
-	float roll_normalized = 0.0;
-	float pid_ctrl_normalized = 0.0;
-	float wheel_speed_normalized = 0.0;
-	int32_t wheel_speed_max = 0;
-};
+#ifdef MEASURE_TIME_DELAYS
+void perf_ready(int idx, float val, float threshold);
+void perf_start(int idx, float val, float threshold);
+void perf_end(int idx, float val, float threshold);
+void perf_end_int(int idx, int16_t val, int16_t threshold);
+void perf_print();
+#endif
 
 #endif

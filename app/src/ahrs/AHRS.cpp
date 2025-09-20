@@ -145,10 +145,10 @@ float AHRS::GetQuaternion(const QUATERNION_SELECT_t quaternion_select) const
 {
     switch (quaternion_select)
     {
-        case Q0: return q0; break; 
-        case Q1: return q1; break; 
-        case Q2: return q2; break; 
-        case Q3: return q3; break; 
+        case Q0: return q0X;
+        case Q1: return q1X;
+        case Q2: return q2X;
+        case Q3: return q3X;
 	default: break;
     }
     return 0.0;
