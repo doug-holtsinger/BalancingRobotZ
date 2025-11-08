@@ -210,6 +210,9 @@ void MadgwickAHRS::update(float gx, float gy, float gz, float ax, float ay, floa
         q1X = q1;
         q2X = q2;
         q3X = q3;
+#ifdef DATALOG_ENABLED
+    QuaternionsDataLogger();
+#endif
 }
 
 void MadgwickAHRS::send_all_client_data(const bool *display_data, const bool settings_display)

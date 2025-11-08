@@ -115,6 +115,7 @@ class IMU {
         int32_t gyroscope_cal_before_correction[3];
         uint32_t gyroscope_cal_before_correction_abs[3];
         float gyroscope_cal[3];
+        float gyroscope_uncal_rad[3];
         float gyroscope_uncal_deg[3];
 
         uncalibrated_t magnetometer_uncal[3];

@@ -35,7 +35,7 @@
     accel_odr = <6>;
     accel_lpf2_enable; 
     gyro_pm = <0>;
-    gyro_range = <6>;
+    gyro_range = <1>;
     gyro_odr = <6>;
     input_composite = <4>;
 };

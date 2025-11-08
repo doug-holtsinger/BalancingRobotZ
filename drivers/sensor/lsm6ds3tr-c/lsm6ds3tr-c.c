@@ -409,7 +409,7 @@ static inline void lsm6ds3tr_c_gyro_convert(struct sensor_value *val, int raw_va
 {
 	int64_t dval;
 
-	/* Sensitivity is exposed in udps/LSB */
+	/* Sensitivity is exposed in micro (1x10e-6) degrees per second/LSB  */
 	/* So, calculate value in 10 udps unit and then to rad/s */
 	dval = (int64_t)(raw_val) * sensitivity / 10;
 	sensor_10udegrees_to_rad(dval, val);
@@ -595,6 +595,11 @@ static int lsm6ds3tr_c_init_chip(const struct device *dev)
 
 	if (lsm6ds3tr_c_block_data_update_set(ctx, 1) < 0) {
 		LOG_DBG("failed to set BDU mode");
+		return -EIO;
+	}
+
+	if (lsm6ds3tr_c_data_format_set(ctx, 0) < 0) {
+		LOG_DBG("failed to set BLE mode");
 		return -EIO;
 	}
 

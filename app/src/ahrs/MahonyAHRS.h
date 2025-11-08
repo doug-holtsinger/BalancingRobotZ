@@ -18,8 +18,10 @@
 
 //---------------------------------------------------------------------------------------------------
 // Definitions
-#define twoKpDef    (2.0f * 0.5f)    // 2 * proportional gain 0.5f original
-#define twoKiDef    (2.0f * 0.0f)    // 2 * integral gain
+//#define twoKpDef    (2.0f * 0.5f)    // 2 * proportional gain 0.5f original
+//#define twoKiDef    (2.0f * 0.0f)    // 2 * integral gain  0.0f original
+#define twoKpDef    (2.0f * 2.5f)    // 2 * proportional gain 0.5f original
+#define twoKiDef    (2.0f * 0.0f)    // 2 * integral gain  0.0f original
 
 class MahonyAHRS : public AHRS
 {

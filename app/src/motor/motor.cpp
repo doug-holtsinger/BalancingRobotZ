@@ -63,40 +63,78 @@ LOG_MODULE_REGISTER(MOTOR, CONFIG_SENSOR_LOG_LEVEL);
 #include "param_store_ids.h"
 #include "pid.h"
 #include "pid_num.h"
+#include "qdec.h"
 
 #include "perf.h"
+#include "datalog.h"
 #include <math.h>
 
 #define MOTOR_DRIVER_THREAD_STACK_SIZE 2048
 
-constexpr float SPEED_PID_KP = 0.02;
-constexpr float SPEED_PID_KI = 0.0;
-constexpr float SPEED_PID_KD = 0.0;
-constexpr float SPEED_PID_SP = 0.0;
-constexpr float SPEED_PID_KP_INCR = 0.005;
-constexpr float SPEED_PID_KI_INCR = 0.005;
-constexpr float SPEED_PID_KD_INCR = 0.005;
-constexpr float SPEED_PID_SP_INCR = 0.05;
-constexpr float SPEED_PID_CTRL_MAX = 1.0;
-constexpr bool SPEED_PID_REVERSE_OUTPUT = true;
-constexpr bool SPEED_PID_LOW_PASS_FILTER = true;
+#define WHEEL_UPDATE_INTERVAL_USECS	(70000)
 
+#define DEGREES_PER_RADIAN 57.2957795f
 
-#if 1
-// extern FIXME -- connect to QDEC
-int32_t wheel_encoder = 0;
+// Setup QDEC
+QDEC qdec = QDEC(DEVICE_DT_GET_ONE(nordic_nrf_qdec));
+
+static float rotation = 0.0f;
+static int32_t timer_current = 0, timer_last = 0;
+static float time_interval = 0.0f;
+static float wheel_speed_encoder = 0.0f;		// wheel speed in radians/second
+
+int32_t debug_cnt = 0;
+
+void wheel_update_work_handler(struct k_work *work)
+{
+    timer_last = timer_current;
+    timer_current = sys_clock_cycle_get_32();
+    //timer_current = sys_clock_cycle_get_64();
+    time_interval = (float)(timer_current - timer_last) / CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC;
+
+    /* get the current rotation in degrees */
+    rotation = qdec.get_rotation_cumulative();
+
+    if (timer_last != 0 && timer_current != timer_last) 
+    {
+	wheel_speed_encoder = rotation / (time_interval * DEGREES_PER_RADIAN);
+        //LOG_INF("rot %f timc %d timl %d timd %f w %f", (double)rotation, timer_current, timer_last, (double)time_interval, (double)wheel_speed_encoder);
+#if 0
+	if (debug_cnt++ > 0x1F) 
+	{
+	    debug_cnt = 0;
+            LOG_INF("rot %f timc %d timl %d timd %f w %f", (double)rotation, timer_current, timer_last, (double)time_interval, (double)wheel_speed_encoder);
+	}
 #endif
+    }
+}
 
+K_WORK_DEFINE(wheel_update_work, wheel_update_work_handler);
+
+void wheel_update_timer_handler(struct k_timer *dummy)
+{
+    k_work_submit(&wheel_update_work);
+}
+
+K_TIMER_DEFINE(wheel_update_timer, wheel_update_timer_handler, NULL);
 
 void motor_driver_thread(void *, void *, void *)
 {
     float speedControlSP = 0.0;
     int thread_loop_cnt = 0;
+
+    int ret;
     PID speedControlPID = PID({SPEED_PID_KP, SPEED_PID_KI, SPEED_PID_KD, SPEED_PID_SP},
            {SPEED_PID_KP_INCR, SPEED_PID_KI_INCR, SPEED_PID_KD_INCR, SPEED_PID_SP_INCR},
             SPEED_PID_CTRL_MAX, SPEED_PID_RECORD_KEY, SPEED_PID_NUM,
             SPEED_PID_REVERSE_OUTPUT, SPEED_PID_LOW_PASS_FILTER);
     MotorDriver md = MotorDriver();
+
+    ret = qdec.init();
+    if (ret < 0) 
+    {
+        LOG_ERR("Failed to initialize QDEC");
+    }
 
     // Register command handler for Motor Driver
     appDemuxRegisterHandler(
@@ -127,14 +165,33 @@ void motor_driver_thread(void *, void *, void *)
         return;
     }
 
+    /* start a periodic timer to perform the wheel speed update */
+    k_timer_start(&wheel_update_timer, K_USEC(WHEEL_UPDATE_INTERVAL_USECS), K_USEC(WHEEL_UPDATE_INTERVAL_USECS)); 
+
     while (true)
     {
-        md.setActualRollAngle(get_imu_roll());
-        speedControlSP = speedControlPID.update(static_cast<float>(wheel_encoder));
+	float roll = get_imu_roll();
+        md.setActualRollAngle(roll);
+        speedControlSP = speedControlPID.update(wheel_speed_encoder);
+
+#ifdef DATALOG_ENABLED
+        datalog_record(DATALOG_ROLL, &roll, nullptr);
+        datalog_record(DATALOG_WHEEL_SPEED, &wheel_speed_encoder, nullptr);
+        datalog_record(DATALOG_SPEED_CONTROL_SP, &speedControlSP, nullptr);
+#endif
+#if 1
+	//DSH4
+	if (debug_cnt++ > 0x7F) 
+	{
+	    debug_cnt = 0;
+            LOG_INF("roll %f speed sp %f w %f mpidkp %f", (double)roll, (double)speedControlSP, (double)wheel_speed_encoder, (double)MOTOR_PID_KP);
+	}
+#endif
         md.setDesiredRollAngle(speedControlSP);
 	if ((thread_loop_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)
 	{
             md.send_all_client_data();
+            speedControlPID.send_all_client_data(); 
 	}
 
         if ((thread_loop_cnt & MOTOR_THREAD_YIELD_INTERVAL) == 0)
@@ -162,6 +219,9 @@ MotorDriver::MotorDriver() :
 void MotorDriver::setActualRollAngle(float i_roll)
 {
     drv_ctrla = pidCtrl.update(i_roll);
+    // revolve at 103 degrees per second
+    //drv_ctrla = 700;
+
     // Limit the drive to a value to prevent the motor from running at max speed
     if (drv_ctrla > MOTOR_DRIVER_MAX_VALUE)
         drv_ctrla = MOTOR_DRIVER_MAX_VALUE;
@@ -195,6 +255,9 @@ pid_ctrl_t MotorDriver::getValue()
 void MotorDriver::setValues(pid_ctrl_t driver0, pid_ctrl_t driver1)
 {
     uint32_t pwm_pulse0_ns, pwm_pulse1_ns;
+#ifdef DATALOG_ENABLED
+    int32_t driver0_int = (int32_t)driver0;
+#endif
 
     // Drive GPIO pins direction
     if (driver0 >= 0)
@@ -210,10 +273,6 @@ void MotorDriver::setValues(pid_ctrl_t driver0, pid_ctrl_t driver1)
         gpio_pin_set_dt(&motor_direction[1], 0);
     }
 
-#ifdef MEASURE_TIME_DELAYS
-    perf_end_int(4, driver0, 200);
-#endif
-
     pwm_pulse0_ns = abs(driver0) * pwm_period_ns / MOTOR_DRIVER_TOP_VALUE;
     pwm_pulse1_ns = abs(driver1) * pwm_period_ns / MOTOR_DRIVER_TOP_VALUE;
 
@@ -221,6 +280,12 @@ void MotorDriver::setValues(pid_ctrl_t driver0, pid_ctrl_t driver1)
     {
         pwm_pulse0_ns = pwm_pulse1_ns = 0;
     }
+#ifdef MEASURE_TIME_DELAYS
+    perf_end_int(4, driver0, 1800);
+#endif
+#ifdef DATALOG_ENABLED
+    datalog_record(DATALOG_MOTOR_RECORD, nullptr, &driver0_int);
+#endif
     pwm_set_dt(&pwm_motor[0], pwm_period_ns, pwm_pulse0_ns );
     pwm_set_dt(&pwm_motor[1], pwm_period_ns, pwm_pulse1_ns );
 

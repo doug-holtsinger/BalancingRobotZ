@@ -12,7 +12,7 @@ LOG_MODULE_REGISTER(QDEC, CONFIG_SENSOR_LOG_LEVEL);
 extern "C" {
 #endif
     // number of degrees that the wheel has turned.
-    float rotation_cumulative = 0.0;
+    static float rotation_cumulative = 0.0;
 
     // number of degrees that the wheel has turned since last trigger.
     static float rotation = 0.0;
@@ -24,12 +24,14 @@ extern "C" {
         struct sensor_value qdec_sens;
         ARG_UNUSED(trigger);
 
+#if 0
         rc = sensor_sample_fetch_chan(dev, SENSOR_CHAN_ROTATION);
         if (rc)
         {
             LOG_ERR("Unable to fetch QDEC samples");
 	    return;
         }
+#endif
 
         rc = sensor_channel_get(dev, SENSOR_CHAN_ROTATION, &qdec_sens);
         if (rc)
@@ -42,7 +44,7 @@ extern "C" {
 	rotation_cumulative += rotation;
 #if 0
         LOG_DBG("qdec val1 %d val2 %d rot %f crot %f\n", qdec_sens.val1, qdec_sens.val2, 
-			static_cast<double>(rotation), static_cast<double>(rotation_cumulative));
+			(double)rotation, (double)rotation_cumulative);
 
 #endif
     }
@@ -69,14 +71,15 @@ int QDEC::init()
 
 float QDEC::get_rotation_cumulative()
 {
-	return rotation_cumulative;
+	float rotation_cumulative_ret = rotation_cumulative;
+	rotation_cumulative = 0.0;
+	return rotation_cumulative_ret;
 }
 
 float QDEC::get_rotation()
 {
-	return rotation;
+	float rotation_ret = rotation;
+	rotation = 0.0;
+	return rotation_ret;
 }
 
-//
-// FIXME -- make a thread?  Move qdec code from main here?
-//

@@ -7,6 +7,7 @@ target_include_directories(app PRIVATE app_demux)
 target_include_directories(app PRIVATE param_store)
 target_include_directories(app PRIVATE motor)
 target_include_directories(app PRIVATE perf)
+target_include_directories(app PRIVATE datalog)
 
 target_sources(app PRIVATE main.cpp)
 
@@ -18,4 +19,5 @@ add_subdirectory(app_demux)
 add_subdirectory(param_store)
 add_subdirectory(motor)
 add_subdirectory(perf)
+add_subdirectory(datalog)
 

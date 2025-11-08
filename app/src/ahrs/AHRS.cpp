@@ -8,6 +8,7 @@
 #include "notify.h"
 
 #include "ble_svcs.h"
+#include "datalog.h"
 
 //---------------------------------------------------------------------------------------------------
 // Fast inverse square-root
@@ -126,6 +127,10 @@ void AHRS::compute_angles(float& roll, float& pitch, float& yaw)
     {
         yaw = l_yaw;
     }
+
+#ifdef DATALOG_ENABLED
+    AnglesDataLogger();
+#endif
 }
 
 // Cython doesn't work with references passed back.
@@ -141,6 +146,14 @@ float AHRS::GetAngle(const EULER_ANGLE_SELECT_t angle_select) const
     return 0.0;
 }
 
+void AHRS::GetAnglesAll(float *euler_angles) const
+{
+    euler_angles[0] = l_roll;
+    euler_angles[1] = l_pitch;
+    euler_angles[2] = l_yaw;
+}
+
+
 float AHRS::GetQuaternion(const QUATERNION_SELECT_t quaternion_select) const
 {
     switch (quaternion_select)
@@ -153,6 +166,29 @@ float AHRS::GetQuaternion(const QUATERNION_SELECT_t quaternion_select) const
     }
     return 0.0;
 }
+
+void AHRS::GetQuaternionAll(float *quaternions) const
+{
+    quaternions[0] = q0X;
+    quaternions[1] = q1X;
+    quaternions[2] = q2X;
+    quaternions[3] = q3X;
+}
+
+#ifdef DATALOG_ENABLED
+void AHRS::QuaternionsDataLogger()
+{
+    float quats[4];
+    GetQuaternionAll(quats);
+    datalog_record(DATALOG_QUAT_RECORD, quats, nullptr);
+}
+void AHRS::AnglesDataLogger()
+{
+    float euler_angles[4];
+    GetAnglesAll(euler_angles);
+    datalog_record(DATALOG_EULER_ANGLES_RECORD, euler_angles, nullptr);
+}
+#endif
 
 void AHRS::GetNormalizedVectors(const IMU_SENSOR_t sensor, float& o_x, float& o_y, float& o_z) const
 {

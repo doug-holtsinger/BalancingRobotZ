@@ -15,11 +15,11 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #include "thread.h"
 
 #include "imu.h"
-//FIXME -- move qdec out of here
-#include "qdec.h"
 #include "ble_svcs.h"
 #include "app_demux.h"
 #include "param_store_ids.h"
+
+#include "datalog.h"
 
 /* The devicetree node identifier for the "led0" alias. */
 /* led2 is the Green LED */
@@ -29,19 +29,55 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(DT_ALIAS(sw0), gpios, {0});
+static struct gpio_callback button_cb_data;
+
+void button_pressed(const struct device *dev, struct gpio_callback *cb,
+		    uint32_t pins)
+{
+#ifdef DATALOG_ENABLED
+	datalog_trigger();
+#else
+	LOG_DBG("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
+#endif
+}
+
 int main(void)
 {
     int ret;
 
     LOG_INF("AHRS Started.\n");
-    QDEC qdec = QDEC(DEVICE_DT_GET_ONE(nordic_nrf_qdec));
 
-    ret = qdec.init();
-    if (ret < 0) {
-	LOG_ERR("Failed to initialize QDEC");
-    	return 1;
+    /* 
+     * Setup and configure button
+     */
+    if (!gpio_is_ready_dt(&button)) 
+    {
+        LOG_ERR("Button device %s is not ready\n", button.port->name);
+        return 1;
     }
 
+    ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
+    if (ret != 0) {
+        LOG_ERR("Error %d: failed to configure %s pin %d\n",
+               ret, button.port->name, button.pin);
+        return ret;
+    }
+
+    ret = gpio_pin_interrupt_configure_dt(&button,
+                          GPIO_INT_EDGE_TO_ACTIVE);
+    if (ret != 0) {
+        LOG_ERR("Error %d: failed to configure interrupt on %s pin %d\n",
+            ret, button.port->name, button.pin);
+        return ret;
+    }
+
+    gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+    gpio_add_callback(button.port, &button_cb_data);
+
+    /* 
+     * Setup and configure BLE
+     */
     ret = ble_svcs_init();
     if (ret < 0) {
 	LOG_ERR("Failed to initialize BLE");

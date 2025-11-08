@@ -16,6 +16,8 @@
 #include "PIDCmd.h"
 
 #include "param_store.h"
+#include "datalog.h"
+#include "pid_num.h"
 
 #define PID_KP_DEFAULT 1.0
 #define PID_KI_DEFAULT 0.0
@@ -59,6 +61,7 @@ class PID {
 	void init()
 	{
             pidParameters_t pp;
+	    // FIXME -- changing pidParams if flash is already valid does not change param_store.get() values
             param_store.init(&pidParams);
             pp = param_store.get();
 	    init_params(pp);
@@ -158,13 +161,13 @@ class PID {
                 PRINTF_FLOAT_VALUE2(pidParams.SP));
             send_client_data(s);
 
-	    // For PID=1, this is the motor encoding in floating point
+	    // For PID=1 (speed control), this is the motor encoding in floating point
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT,
                 PID_NOTIFY(PID_PV, pidNum),
                 PRINTF_FLOAT_VALUE(l_PV_save));
             send_client_data(s);
 
-	    // For PID=1, this becomes the setpoint for the Motor PID
+	    // For PID=1 (speed control), this becomes the setpoint for the Motor PID
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2,
                 PID_NOTIFY(PID_OUTPUT, pidNum),
                 PRINTF_FLOAT_VALUE2(controlSetting));
@@ -199,6 +202,9 @@ class PID {
 
 	T update(const float i_PV)
 	{
+#ifdef DATALOG_ENABLED
+	    float controlSetFloatContrib = 0.0;
+#endif
             if (lowPassFilter)
 	    {
                 l_PV = 0.8f * l_PV + 0.2f * i_PV;
@@ -217,15 +223,31 @@ class PID {
 
             // KP contribution
 	    float controlSetFloat = pidParams.KP * errorDiff;
-
+#ifdef DATALOG_ENABLED
+	    if (pidNum == MOTOR_PID_NUM)
+	    {
+                controlSetFloatContrib = controlSetFloat;
+                datalog_record(DATALOG_PID_KP_RECORD, &controlSetFloatContrib, nullptr);
+	    }
+#endif
+	    //
             // KI contribution
 	    if (pidParams.KI > 0.0f)
 	    {
 	        for (short unsigned int i=0 ; i < errorHistory.size() ; ++i)
 	        {
-	            controlSetFloat += (pidParams.KI * errorHistory[i]);
+		    controlSetFloat += (pidParams.KI * errorHistory[i]);
 	        }
 	    }
+
+#ifdef DATALOG_ENABLED
+            if (pidNum == MOTOR_PID_NUM)
+            {
+	        controlSetFloatContrib = controlSetFloat - controlSetFloatContrib;
+                datalog_record(DATALOG_PID_KI_RECORD, &controlSetFloatContrib, nullptr);
+            }
+            controlSetFloatContrib = controlSetFloat;
+#endif
 
 	    // KD contribution
 	    if (pidParams.KD > 0.0f)
@@ -236,6 +258,13 @@ class PID {
 	            controlSetFloat += (pidParams.KD * (errorHistory[errLen-1] - errorHistory[errLen-2]));
 	        }
 	    }
+#ifdef DATALOG_ENABLED
+            if (pidNum == MOTOR_PID_NUM)
+            {
+                controlSetFloatContrib = controlSetFloat - controlSetFloatContrib;
+                datalog_record(DATALOG_PID_KD_RECORD, &controlSetFloatContrib, nullptr);
+	    }
+#endif
 
 	    // Max setting
 	    if (controlSetFloat > controlSettingMax)
@@ -273,7 +302,7 @@ class PID {
 	const bool reverseOutput;
 	const bool lowPassFilter;
 
-	float l_PV;
+	float l_PV;				// process variable
 	float l_PV_save;
 	float controlSettingSave;
 };

@@ -3,7 +3,7 @@
 
 #define NUM_TIME_MEASUREMENTS 5
 
-//#define MEASURE_TIME_DELAYS
+// #define MEASURE_TIME_DELAYS
 
 #ifdef MEASURE_TIME_DELAYS
 void perf_ready(int idx, float val, float threshold);

@@ -1,3 +1,4 @@
+--------------------------------
 Pin Ordering as viewed from Motor Shaft End
 
 Motor   M1   White
@@ -11,20 +12,23 @@ Drive Reduction:
 about 30:1
 
 Nordic Pins
-   1.10  opposite USB side JST connector - C1 -- Green Wire
-   1.13  opposite USB side JST connector - C2 -- Yellow Wire
+   1.10  opposite USB side JST connector - C3 -- Green Wire
+   1.13  opposite USB side JST connector - C4 -- Yellow Wire
    1.15  USB side JST connector - C1 -- Green Wire
    0.02  USB side JST connector - C2 -- Yellow Wire
 
+--------------------------------
+USB side pointing left, opposite USB side pointing right.
+
+wheel encoder -- opposite USB side JST connector
+  wheel anti-clockwise rotation -- negative encoder value -- move towards me -- lean towards me -- positive roll value
+  wheel clockwise rotation -- positive encoder value -- away from me -- lean away from me -- negative roll value
+ 
+-------
+Need to re-determine this below.
 Wheel encoder -- USB side JST connector -- USB connector on my left
   wheel clockwise rotation -- positive encoder value -- move towards me -- lean
 towards me
   wheel anti-clockwise rotation -- negative encoder value -- away from me --
 lean away from me
 
-wheel encoder -- opposite USB side JST connector
-  wheel clockwise rotation -- negative encoder value -- move towards me -- lean
-towards me
-  wheel anti-clockwise rotation -- positive encoder value -- away from me --
-lean away from me
- 

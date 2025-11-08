@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 #include "param_store_ids.h"
 
 #include "perf.h"
+#include "datalog.h"
 
 #define IMU_THREAD_STACK_SIZE 2048
 
@@ -101,8 +102,8 @@ void imu_thread(void *, void *, void *)
 	if ((yield_loop_cnt++ & IMU_THREAD_YIELD_INTERVAL) == 0)
 	{
 #ifdef MEASURE_TIME_DELAYS
-            perf_end(3, rollf, 1.0);
-            perf_start(4, rollf, 1.0);
+            perf_end(3, rollf, 0.0);
+            perf_start(4, rollf, 0.0);
 #endif
             k_yield();
 	}
@@ -157,6 +158,8 @@ int IMU::init()
     reset_calibration();
     param_store.init(&cp);
     imu_cal_params = param_store.get();
+    //FIXME -- need to have this as the default right after burning a new image.
+    imu_cal_params.gyroscope_correction = 1.0f;
     init_params(imu_cal_params);
     return rc;
 }
@@ -251,9 +254,9 @@ int IMU::read_sensors()
 	//LOG_DBG("gyro[%d] uncal %d sens %d %d", i, gyroscope_uncal[i], gyroscope_sens[i].val1, gyroscope_sens[i].val2);
         magnetometer_uncal[i] = (uncalibrated_t)sensor_gauss_to_mgauss(&magnetometer_sens[i]);
     }
-
-#ifdef MEASURE_TIME_DELAYS
-    //perf_start(0, accelerometer_uncal[1], 50.0);
+#ifdef DATALOG_ENABLED
+    datalog_record(DATALOG_ACCEL_UNCAL_RECORD, nullptr, accelerometer_uncal);
+    datalog_record(DATALOG_GYRO_UNCAL_RECORD, nullptr, gyroscope_uncal);
 #endif
 
     return rc;
@@ -458,6 +461,14 @@ void IMU::calibrate_data(void)
         {
             accelerometer_cal[i] = 0;
         }
+	if (accelerometer_cal[i] > 1000)
+	{
+	    accelerometer_cal[i] = 1000;
+	}
+	if (accelerometer_cal[i] < -1000)
+	{
+	    accelerometer_cal[i] = -1000;
+	}
 
 	// subtract gyroscope zero offset
         gyroscope_cal_before_correction[i] = gyroscope_uncal[i] - cp.gyroscope_zero_offset[i];
@@ -465,6 +476,7 @@ void IMU::calibrate_data(void)
         if ( gyroscope_cal_before_correction_abs[i] < cp.gyroscope_min_threshold[i] )
         {
             gyroscope_cal[i] = 0;
+            LOG_DBG("g2 %d %d %d %d %d %d %f %f", i, gyroscope_uncal[i], cp.gyroscope_min_threshold[i], cp.gyroscope_zero_offset[i], gyroscope_cal_before_correction_abs[i], gyroscope_cal_before_correction[i], (double)cp.gyroscope_correction, (double)gyroscope_cal[i]);
         } else {
 	    // Convert from 10 microdegrees per second to radians per second and apply correction factor.
             gyroscope_cal[i] = gyroscope_cal_before_correction[i] * cp.gyroscope_correction / ( DEGREES_PER_RADIAN * MICRO10DEGREES_PER_DEGREE);
@@ -481,8 +493,11 @@ void IMU::calibrate_data(void)
         cp.magnetometer_uncal_last[i] = magnetometer_uncal[i];
     }
 #ifdef MEASURE_TIME_DELAYS
-    //perf_end(0, accelerometer_cal[1], 50.0);
-    perf_start(1, accelerometer_cal[1], 50.0);
+    perf_start(1, accelerometer_cal[1], 30.0);
+#endif
+#ifdef DATALOG_ENABLED
+    datalog_record(DATALOG_ACCEL_CAL_RECORD, nullptr, accelerometer_cal);
+    datalog_record(DATALOG_GYRO_CAL_RECORD, gyroscope_cal, nullptr);
 #endif
 }
 
@@ -501,32 +516,32 @@ void IMU::compute_angles()
         AHRSptr->GetNormalizedVectors(IMU_ACCELEROMETER, axN, ayN, azN);
 	if ( fabsf(axN) < 0.1f && fabsf(ayN) < 0.1f )
 	{
-            accelerometer_cal[X_AXIS] = accelerometer_cal[Y_AXIS] = 0.0f;
-	    if (accelerometer_cal[Z_AXIS] < 0.0)
+            accelerometer_cal[X_AXIS] = accelerometer_cal[Y_AXIS] = 0;
+	    if (accelerometer_cal[Z_AXIS] < 0)
 	    {
-                accelerometer_cal[Z_AXIS] = -1000.0f;
+                accelerometer_cal[Z_AXIS] = -1000;
 	    } else {
-                accelerometer_cal[Z_AXIS] = 1000.0f;
+                accelerometer_cal[Z_AXIS] = 1000;
 	    }
 	}
 	if ( fabsf(ayN) < 0.1f && fabsf(azN) < 0.1f )
 	{
-            accelerometer_cal[Y_AXIS] = accelerometer_cal[Z_AXIS] = 0.0f;
-	    if (accelerometer_cal[X_AXIS] < 0.0)
+            accelerometer_cal[Y_AXIS] = accelerometer_cal[Z_AXIS] = 0;
+	    if (accelerometer_cal[X_AXIS] < 0)
 	    {
-                accelerometer_cal[X_AXIS] = -1000.0f;
+                accelerometer_cal[X_AXIS] = -1000;
 	    } else {
-                accelerometer_cal[X_AXIS] = 1000.0f;
+                accelerometer_cal[X_AXIS] = 1000;
 	    }
 	}
 	if ( fabsf(axN) < 0.1f && fabsf(azN) < 0.1f )
 	{
-            accelerometer_cal[X_AXIS] = accelerometer_cal[Z_AXIS] = 0.0f;
-	    if (accelerometer_cal[Y_AXIS] < 0.0)
+            accelerometer_cal[X_AXIS] = accelerometer_cal[Z_AXIS] = 0;
+	    if (accelerometer_cal[Y_AXIS] < 0)
 	    {
-                accelerometer_cal[Y_AXIS] = -1000.0f;
+                accelerometer_cal[Y_AXIS] = -1000;
 	    } else {
-                accelerometer_cal[Y_AXIS] = 1000.0f;
+                accelerometer_cal[Y_AXIS] = 1000;
 	    }
 	}
     }
@@ -555,12 +570,11 @@ void IMU::compute_angles()
 		    (float)magnetometer_cal[0],
 		    (float)magnetometer_cal[1],
 		    (float)magnetometer_cal[2]);
-
     AHRSptr->compute_angles(roll, pitch, yaw);
 
 #ifdef MEASURE_TIME_DELAYS
-    perf_end(2, roll, 1.0);
-    perf_start(3, roll, 1.0);
+    perf_end(2, roll, 1.8);
+    perf_start(3, roll, 1.8);
 #endif
 }
 
@@ -634,15 +648,13 @@ void IMU::send_all_client_data()
 	    for (int i=0 ; i<3 ; i++)
 	    {
                 // convert from 10micro degrees/sec to radians/sec.
-                //gyroscope_uncal_rad[i] = gyroscope_uncal[i] / (DEGREES_PER_RADIAN * MICRO10DEGREES_PER_DEGREE);
-                // convert from 10micro degrees/sec to degrees/sec.
-                gyroscope_uncal_deg[i] = gyroscope_uncal[i] / MICRO10DEGREES_PER_DEGREE;
+                gyroscope_uncal_rad[i] = gyroscope_uncal[i] / (DEGREES_PER_RADIAN * MICRO10DEGREES_PER_DEGREE);
 	    }
             snprintf(s, NOTIFY_PRINT_STR_MAX_LEN, "%d " PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 PRINTF_FLOAT_FORMAT2 ,
                 GYROSCOPE_UNCAL,
-                PRINTF_FLOAT_VALUE(gyroscope_uncal_deg[0]),
-                PRINTF_FLOAT_VALUE(gyroscope_uncal_deg[1]),
-                PRINTF_FLOAT_VALUE(gyroscope_uncal_deg[2])
+                PRINTF_FLOAT_VALUE(gyroscope_uncal_rad[0]),
+                PRINTF_FLOAT_VALUE(gyroscope_uncal_rad[1]),
+                PRINTF_FLOAT_VALUE(gyroscope_uncal_rad[2])
                 );
 #endif
             send_client_data(s);
@@ -790,32 +802,32 @@ void IMU::MeasureODR()
 void IMU::update(void)
 {
 #ifdef MEASURE_TIME_DELAYS
-    //perf_end(0, 0.0, 0.0);
-    //perf_start(0, 0.0, 0.0);
+    perf_end(0, 0.0, 0.0);
+    perf_start(0, 0.0, 0.0);
 #endif
 
     if (!read_sensors())
     {
-	switch (calibrate_enable)
-	{
+        switch (calibrate_enable)
+        {
             case IMU_CALIBRATE_DISABLED: 
                 calibrate_data();
-		break;
-	    case IMU_CALIBRATE_ZERO_OFFSET:
+            break;
+            case IMU_CALIBRATE_ZERO_OFFSET:
                 calibrate_zero_offset();
-		break;
-	    case IMU_CALIBRATE_MAGNETOMETER:
+            break;
+            case IMU_CALIBRATE_MAGNETOMETER:
                 calibrate_magnetometer();
-		break;
+            break;
 #if 0
-		//FIXME -- add this back in?
-	    case IMU_CALIBRATE_GYROSCOPE:
-                calibrate_gyroscope();
-		break;
+            //FIXME -- add this back in?
+            case IMU_CALIBRATE_GYROSCOPE:
+                    calibrate_gyroscope();
+            break;
 #endif
-	    default: break;
-	}
-        compute_angles();
+            default: break;
+        }
+            compute_angles();
     } else
     {
         LOG_ERR("Could not read sensors");
