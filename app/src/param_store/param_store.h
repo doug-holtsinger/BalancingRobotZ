@@ -27,7 +27,7 @@ public:
     {
     }
 
-    int init(T *param_store_data_ptr)
+    int init(T *param_store_data_ptr, bool writeStore)
     {
 	int rc = 0;
 	int bytes_read = 0;
@@ -54,7 +54,7 @@ public:
 
 	bytes_read = nvs_read(&fs, nvs_data_id, &param_data, sizeof(param_data));
         LOG_DBG("Flash record %d bytes read: %d", nvs_data_id, bytes_read);
-	if (bytes_read <= 0)
+	if (bytes_read <= 0 || writeStore)
 	{
             /* record not found, initialize it */
             rc = this->set(param_store_data_ptr);

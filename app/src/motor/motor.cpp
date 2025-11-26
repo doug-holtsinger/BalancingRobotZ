@@ -179,8 +179,7 @@ void motor_driver_thread(void *, void *, void *)
         datalog_record(DATALOG_WHEEL_SPEED, &wheel_speed_encoder, nullptr);
         datalog_record(DATALOG_SPEED_CONTROL_SP, &speedControlSP, nullptr);
 #endif
-#if 1
-	//DSH4
+#if 0
 	if (debug_cnt++ > 0x7F) 
 	{
 	    debug_cnt = 0;
@@ -231,6 +230,10 @@ void MotorDriver::setActualRollAngle(float i_roll)
     drv_ctrlb = -drv_ctrla;
     if (motor_enabled && abs(i_roll) > MOTOR_DISABLE_ROLL_ANGLE)
     {
+#ifdef DATALOG_ENABLED
+	motor_enabled = false;
+	datalog_stop_collection();
+#endif
         drv_ctrla = drv_ctrlb = 0;
     }
     this->setValues(drv_ctrla, drv_ctrlb);

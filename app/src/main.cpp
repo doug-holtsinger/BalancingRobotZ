@@ -36,7 +36,7 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
 {
 #ifdef DATALOG_ENABLED
-	datalog_trigger();
+	datalog_trigger_dump();
 #else
 	LOG_DBG("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
 #endif

@@ -32,21 +32,30 @@ typedef struct {
         // DATALOG_THREAD_t thread_active;
 } DATALOG_ENTRY_t;
 
-static bool triggered = false;
+static bool stop_collection = false;
+static bool trigger_dump = false;
 static uint32_t datalog_idx = 0;
 static DATALOG_ENTRY_t arr[DATALOG_ARRAY_SIZE];
 
 float last_val;
 
-void datalog_trigger()
+void datalog_stop_collection()
 {
-    triggered = true;
+    stop_collection = true;
 }
 
-static void datalog_dump()
+void datalog_trigger_dump()
 {
-    for (int i=0 ; i < DATALOG_ARRAY_SIZE; i++)
+    trigger_dump = true;
+}
+
+void datalog_dump()
+{
+    uint32_t idx_start = (datalog_idx + 1) % DATALOG_ARRAY_SIZE;
+
+    for (int j=0 ; j < DATALOG_ARRAY_SIZE; j++)
     {
+        uint32_t i = (idx_start + j) % DATALOG_ARRAY_SIZE;
         switch (arr[i].record_type)
         {
             case DATALOG_ACCEL_UNCAL_RECORD:
@@ -132,22 +141,20 @@ static void datalog_dump()
         }
         k_msleep(SLEEP_TIME_MS);
     }
-    /*
-     * Clear trigger flag after dumping out results
-     */
-    triggered = false;
 }
 
 void datalog_record(DATALOG_RECORD_t record_type, float *record, int32_t *recordi)
 {
-        if (triggered && datalog_idx == DATALOG_ARRAY_SIZE)
-        {
-            datalog_dump();
+	if (trigger_dump)
+	{
+	    datalog_dump();
+	    trigger_dump = false;
+	    return;
         }
 
-        if (!triggered || datalog_idx > DATALOG_ARRAY_SIZE)
-        {
-                return;
+	if (stop_collection)
+	{
+	    return;
         }
 
         arr[datalog_idx].timestamp = sys_clock_cycle_get_32();
@@ -212,7 +219,7 @@ void datalog_record(DATALOG_RECORD_t record_type, float *record, int32_t *record
                 arr[datalog_idx].u.motor_driver = *recordi;
                 break;
         }
-        datalog_idx++;
+        datalog_idx = (datalog_idx + 1) % DATALOG_ARRAY_SIZE;
 }
 
 #endif

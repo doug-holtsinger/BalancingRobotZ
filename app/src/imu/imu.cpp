@@ -156,7 +156,7 @@ int IMU::init()
         return rc;
     }
     reset_calibration();
-    param_store.init(&cp);
+    param_store.init(&cp, false);
     imu_cal_params = param_store.get();
     //FIXME -- need to have this as the default right after burning a new image.
     imu_cal_params.gyroscope_correction = 1.0f;

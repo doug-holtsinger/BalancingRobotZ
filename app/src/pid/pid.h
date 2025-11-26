@@ -62,7 +62,7 @@ class PID {
 	{
             pidParameters_t pp;
 	    // FIXME -- changing pidParams if flash is already valid does not change param_store.get() values
-            param_store.init(&pidParams);
+            param_store.init(&pidParams, true);
             pp = param_store.get();
 	    init_params(pp);
 	}

@@ -22,12 +22,22 @@ constexpr uint32_t pwm_period_ns = PWM_TOP_COUNT * NANOSECS_PER_CLK_PERIOD;
 // Setpoint default of PID controller
 constexpr float MOTOR_DRIVER_SP_DEFAULT = 0.0;
 
-constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 18.6; // original
-constexpr float MOTOR_PID_KI = 100.0;
+// constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 15.1;
+// constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 7.5; 
+// constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 5.5; 
+// oscillation -- KP=2012, KI=0
+// constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 4.07; 
+// Seems best so far with KI=0 and original PID, little oscillation but still falls down at higher speeds.
+constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 5.0; 
+// constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 7.0; 
+
+// constexpr float MOTOR_PID_KI = 100.0;
+constexpr float MOTOR_PID_KI = 0.0;
 constexpr float MOTOR_PID_KD = 0.0;
 constexpr float MOTOR_PID_SP = 0.0;
-constexpr float MOTOR_PID_KP_INCR = 5.0;
-constexpr float MOTOR_PID_KI_INCR = 5.0;
+constexpr float MOTOR_PID_KAW = 1.0;
+constexpr float MOTOR_PID_KP_INCR = 100.0;
+constexpr float MOTOR_PID_KI_INCR = 10.0;
 constexpr float MOTOR_PID_KD_INCR = 2.0;
 constexpr float MOTOR_PID_SP_INCR = 0.05;
 
@@ -35,6 +45,7 @@ constexpr float SPEED_PID_KP = 0.10f;   // was 0.02 original
 constexpr float SPEED_PID_KI = 0.00f;   // was 0.0 original
 constexpr float SPEED_PID_KD = 0.0f;
 constexpr float SPEED_PID_SP = 0.0f;
+constexpr float SPEED_PID_KAW = 0.0f;
 constexpr float SPEED_PID_KP_INCR = 0.005f;
 constexpr float SPEED_PID_KI_INCR = 0.005f;
 constexpr float SPEED_PID_KD_INCR = 0.005f;
