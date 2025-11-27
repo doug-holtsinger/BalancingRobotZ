@@ -82,6 +82,8 @@ static float rotation = 0.0f;
 static int32_t timer_current = 0, timer_last = 0;
 static float time_interval = 0.0f;
 static float wheel_speed_encoder = 0.0f;		// wheel speed in radians/second
+//static float wheel_speed_encoder_last = 0.0f;
+//static float motor_speed = 0.0f;
 
 int32_t debug_cnt = 0;
 
@@ -98,14 +100,6 @@ void wheel_update_work_handler(struct k_work *work)
     if (timer_last != 0 && timer_current != timer_last) 
     {
 	wheel_speed_encoder = rotation / (time_interval * DEGREES_PER_RADIAN);
-        //LOG_INF("rot %f timc %d timl %d timd %f w %f", (double)rotation, timer_current, timer_last, (double)time_interval, (double)wheel_speed_encoder);
-#if 0
-	if (debug_cnt++ > 0x1F) 
-	{
-	    debug_cnt = 0;
-            LOG_INF("rot %f timc %d timl %d timd %f w %f", (double)rotation, timer_current, timer_last, (double)time_interval, (double)wheel_speed_encoder);
-	}
-#endif
     }
 }
 
@@ -128,6 +122,7 @@ void motor_driver_thread(void *, void *, void *)
            {SPEED_PID_KP_INCR, SPEED_PID_KI_INCR, SPEED_PID_KD_INCR, SPEED_PID_SP_INCR},
             SPEED_PID_CTRL_MAX, SPEED_PID_RECORD_KEY, SPEED_PID_NUM,
             SPEED_PID_REVERSE_OUTPUT, SPEED_PID_LOW_PASS_FILTER);
+    // speedControlPID.init();
     MotorDriver md = MotorDriver();
 
     ret = qdec.init();
@@ -172,19 +167,13 @@ void motor_driver_thread(void *, void *, void *)
     {
 	float roll = get_imu_roll();
         md.setActualRollAngle(roll);
+
         speedControlSP = speedControlPID.update(wheel_speed_encoder);
 
 #ifdef DATALOG_ENABLED
         datalog_record(DATALOG_ROLL, &roll, nullptr);
         datalog_record(DATALOG_WHEEL_SPEED, &wheel_speed_encoder, nullptr);
         datalog_record(DATALOG_SPEED_CONTROL_SP, &speedControlSP, nullptr);
-#endif
-#if 0
-	if (debug_cnt++ > 0x7F) 
-	{
-	    debug_cnt = 0;
-            LOG_INF("roll %f speed sp %f w %f mpidkp %f", (double)roll, (double)speedControlSP, (double)wheel_speed_encoder, (double)MOTOR_PID_KP);
-	}
 #endif
         md.setDesiredRollAngle(speedControlSP);
 	if ((thread_loop_cnt++ & BLE_SEND_NOTIFICATION_INTERVAL) == 0)

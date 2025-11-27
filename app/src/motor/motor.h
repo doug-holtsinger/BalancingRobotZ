@@ -28,8 +28,8 @@ constexpr float MOTOR_DRIVER_SP_DEFAULT = 0.0;
 // oscillation -- KP=2012, KI=0
 // constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 4.07; 
 // Seems best so far with KI=0 and original PID, little oscillation but still falls down at higher speeds.
-constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 5.0; 
-// constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 7.0; 
+// constexpr float MOTOR_PID_KP = PID_CONTROL_SETTING_MAX / 5.0; 
+constexpr float MOTOR_PID_KP = (PID_CONTROL_SETTING_MAX / 5.0f) - 100.0f; 
 
 // constexpr float MOTOR_PID_KI = 100.0;
 constexpr float MOTOR_PID_KI = 0.0;
@@ -41,14 +41,14 @@ constexpr float MOTOR_PID_KI_INCR = 10.0;
 constexpr float MOTOR_PID_KD_INCR = 2.0;
 constexpr float MOTOR_PID_SP_INCR = 0.05;
 
-constexpr float SPEED_PID_KP = 0.10f;   // was 0.02 original
-constexpr float SPEED_PID_KI = 0.00f;   // was 0.0 original
+constexpr float SPEED_PID_KP = 0.1f;   // was 0.02 original
+constexpr float SPEED_PID_KI = 0.05f;   // was 0.0 original
 constexpr float SPEED_PID_KD = 0.0f;
 constexpr float SPEED_PID_SP = 0.0f;
 constexpr float SPEED_PID_KAW = 0.0f;
-constexpr float SPEED_PID_KP_INCR = 0.005f;
-constexpr float SPEED_PID_KI_INCR = 0.005f;
-constexpr float SPEED_PID_KD_INCR = 0.005f;
+constexpr float SPEED_PID_KP_INCR = 0.05f;
+constexpr float SPEED_PID_KI_INCR = 0.05f;
+constexpr float SPEED_PID_KD_INCR = 0.05f;
 constexpr float SPEED_PID_SP_INCR = 0.05f;
 constexpr float SPEED_PID_CTRL_MAX = 2.0f;
 constexpr bool SPEED_PID_REVERSE_OUTPUT = false;

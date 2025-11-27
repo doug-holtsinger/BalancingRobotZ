@@ -148,6 +148,7 @@ void datalog_record(DATALOG_RECORD_t record_type, float *record, int32_t *record
 	if (trigger_dump)
 	{
 	    datalog_dump();
+            datalog_stop_collection();
 	    trigger_dump = false;
 	    return;
         }
