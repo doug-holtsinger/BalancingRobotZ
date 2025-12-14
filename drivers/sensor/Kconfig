@@ -6,4 +6,5 @@ menuconfig SENSOR
 if SENSOR
 rsource "lsm6ds3tr-c/Kconfig"
 rsource "lis3mdlz/Kconfig"
+rsource "qdec_nrfx/Kconfig"
 endif

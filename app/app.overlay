@@ -22,11 +22,14 @@
 };
 
 &qdec {
+    compatible = "nordic,nrf-qdecz";
     status = "okay";
     pinctrl-0 = <&qdec_default>;
     pinctrl-names = "default";
     led-pre = <0>;
     steps = <830>;
+    reportper = <4>;
+    sampleper = <0>;
 };
 
 &lsm6ds3 {

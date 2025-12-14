@@ -1,0 +1,28 @@
+# Copyright (c) 2018, Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+# copied from: zephyr/soc/nordic/common/Kconfig.peripherals
+config HAS_HW_NRF_QDECZ0
+        def_bool $(dt_nodelabel_enabled_with_compat,qdec0,$(DT_COMPAT_NORDIC_NRF_QDECZ))
+
+# copied from: zephyr/modules/hal_nordic/nrfx/Kconfig
+config NRFX_QDECZ0
+        bool "QDEC0 driver instance"
+        depends on $(dt_nodelabel_has_compat,qdec0,$(DT_COMPAT_NORDIC_NRF_QDECZ))
+        select NRFX_QDEC
+
+# copied from: zephyr/drivers/sensor/nordic/qdec_nrfx/Kconfig
+config QDECZ_NRFX
+        bool "Nordic QDEC nrfx driver"
+        default y
+        depends on DT_HAS_NORDIC_NRF_QDECZ_ENABLED
+        select NRFX_QDECZ0 if HAS_HW_NRF_QDECZ0
+        select NRFX_QDECZ1 if HAS_HW_NRF_QDECZ1
+        select NRFX_QDECZ20 if HAS_HW_NRF_QDECZ20
+        select NRFX_QDECZ21 if HAS_HW_NRF_QDECZ21
+        select NRFX_QDECZ130 if HAS_HW_NRF_QDECZ130
+        select NRFX_QDECZ131 if HAS_HW_NRF_QDECZ131
+        select PINCTRL
+        help
+          Enable support for nrfx QDEC driver for nRF MCU series.
+

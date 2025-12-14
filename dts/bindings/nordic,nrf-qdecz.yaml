@@ -1,0 +1,80 @@
+# Copyright (c) 2018, Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+description: Nordic nRF quadrature decoder (QDEC) node
+
+compatible: "nordic,nrf-qdecz"
+
+include: [sensor-device.yaml, pinctrl-device.yaml]
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+
+  pinctrl-0:
+    required: true
+
+  enable-pin:
+    type: int
+    description: |
+      The enable pin to use, to enable a connected QDEC device
+
+      For pins P0.0 through P0.31, use the pin number. For example,
+      to use P0.16 for the A pin, set:
+
+          enable-pin = <16>;
+
+      For pins P1.0 through P1.31, add 32 to the pin number. For
+      example, to use P1.2 for the A pin, set:
+
+          enable-pin = <34>;  /* 32 + 2 */
+
+  led-pre:
+    type: int
+    description: Time LED is enabled prior to sampling event (in us)
+    required: true
+
+  steps:
+    type: int
+    description: Number of steps on the rotating wheel
+    required: true
+
+  reportper:
+    type: int
+    description: |
+      Report period 
+
+      - 0   # 10 samples/report
+      - 1   # 40 samples/report 
+      - 2   # 80 samples/report 
+      - 3   # 120 samples/report 
+      - 4   # 160 samples/report
+      - 5   # 200 samples/report
+      - 6   # 240 samples/report
+      - 7   # 280 samples/report
+      - 8   # 1 sample/report
+
+    enum: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+  sampleper:
+    type: int
+    description: |
+      Sample period 
+
+      - 0   # 128 us
+      - 1   # 256 us
+      - 2   # 512 us
+      - 3   # 1024 us
+      - 4   # 2048 us
+      - 5   # 4096 us
+      - 6   # 8192 us
+      - 7   # 16384 us
+      - 8   # 32768 us
+      - 9   # 65536 us
+      - 10  # 131072 us
+
+    enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+

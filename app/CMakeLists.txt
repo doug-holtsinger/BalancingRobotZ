@@ -16,11 +16,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Controls logging in the NRFX PWM HAL (modules/hal/nordic/nrfx/drivers/src)
 zephyr_compile_definitions(NRFX_PWM_CONFIG_LOG_ENABLED=0)
 #zephyr_compile_definitions(NRFX_PWM_CONFIG_LOG_LEVEL=4)
+# Controls logging in the NRFX QDEC HAL (modules/hal/nordic/nrfx/drivers/src)
 #zephyr_compile_definitions(NRFX_QDEC_CONFIG_LOG_ENABLED=1)
 #zephyr_compile_definitions(NRFX_QDEC_CONFIG_LOG_LEVEL=4)
 
-#target_sources(app PRIVATE src/main.c)
-#target_sources(app PRIVATE src/bt_nus.c)
+# workaround for out-of-tree QDEC driver which ultimately relies on
+# the existence of the define in this included file.
+target_compile_options(drivers__pinctrl PRIVATE
+        "-include"
+	"$ENV{ZEPHYR_BASE}/../BalancingRobotZ/drivers/sensor/qdec_nrfx/qdec_pinctrl.h"
+    )
 
 add_subdirectory(src)
 

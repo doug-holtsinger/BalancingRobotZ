@@ -32,3 +32,13 @@ towards me
   wheel anti-clockwise rotation -- negative encoder value -- away from me --
 lean away from me
 
+
+QDEC driver settings:
+// original:
+// reportper 40
+// sampleper 2048useconds
+
+// new:
+// reportper 160
+// sampleper 128useconds
+

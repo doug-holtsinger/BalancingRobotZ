@@ -76,7 +76,7 @@ LOG_MODULE_REGISTER(MOTOR, CONFIG_SENSOR_LOG_LEVEL);
 #define DEGREES_PER_RADIAN 57.2957795f
 
 // Setup QDEC
-QDEC qdec = QDEC(DEVICE_DT_GET_ONE(nordic_nrf_qdec));
+QDEC qdec = QDEC(DEVICE_DT_GET_ONE(nordic_nrf_qdecz));
 
 static float rotation = 0.0f;
 static int32_t timer_current = 0, timer_last = 0;
