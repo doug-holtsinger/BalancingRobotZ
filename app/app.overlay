@@ -28,8 +28,8 @@
     pinctrl-names = "default";
     led-pre = <0>;
     steps = <830>;
-    reportper = <4>;
-    sampleper = <0>;
+    reportper = "REPORTPER_160";
+    sampleper = "SAMPLEPER_128US";
 };
 
 &lsm6ds3 {

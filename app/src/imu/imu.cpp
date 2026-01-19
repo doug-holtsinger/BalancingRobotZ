@@ -20,8 +20,6 @@ LOG_MODULE_REGISTER(IMU, CONFIG_SENSOR_LOG_LEVEL);
 #include "ble_cfg.h"
 
 #include "app_demux.h"
-
-#include "param_store.h"
 #include "param_store_ids.h"
 
 #include "perf.h"
@@ -77,6 +75,7 @@ void imu_thread(void *, void *, void *)
 
     /* initial update, remaining updates are handled by the timer thread */
     imu.update();
+
 
     /* start a periodic timer to perform the update */
     k_timer_start(&imu_update_timer, K_USEC(IMU_UPDATE_INTERVAL_USECS), K_USEC(IMU_UPDATE_INTERVAL_USECS)); 

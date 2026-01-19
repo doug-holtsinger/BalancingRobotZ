@@ -83,16 +83,6 @@ static void connected(struct bt_conn *conn, uint8_t err)
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
     char addr[BT_ADDR_LE_STR_LEN];
-#if 0
-    bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN_ONE_TIME;
-    int err;
-
-    err = bt_le_adv_start(bt_adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
-    if (err) {
-        LOG_ERR("Failed to start advertising: %d\n", err);
-	return;
-    }
-#endif
     ble_connected = false;
     if (current_conn) {
         bt_conn_unref(current_conn);
@@ -111,7 +101,7 @@ struct bt_nus_cb nus_listener = {
 int ble_svcs_init(void)
 {
     int err = 0;
-    struct bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN;
+    // struct bt_le_adv_param bt_adv_param[1] = BT_LE_ADV_CONN_FAST_2;
 
     // FIXME: use a non-standard manufacturer ID
     manufacturer_data[0] = -1;
@@ -135,11 +125,14 @@ int ble_svcs_init(void)
         return err;
     }
 
-    err = bt_le_adv_start(bt_adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+#if 0
+    //DSH4
+    err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_2, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     if (err) {
         LOG_ERR("Failed to start advertising: %d\n", err);
         return err;
     }
+#endif
 
     LOG_DBG("init complete\n");
 
@@ -162,10 +155,12 @@ int ble_svcs_send_euler_angles(int16_t& roll, int16_t& pitch, int16_t& yaw)
     manufacturer_data[3] = yaw;
 
     err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+#if 0
     if (err) 
     { 
         LOG_ERR("Failed to update advertising: %d\n", err);
     }
+#endif
 
     return err;
 }

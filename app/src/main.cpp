@@ -14,7 +14,6 @@ LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 
 #include "thread.h"
 
-#include "imu.h"
 #include "ble_svcs.h"
 #include "app_demux.h"
 #include "param_store_ids.h"

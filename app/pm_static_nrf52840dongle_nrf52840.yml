@@ -1,0 +1,14 @@
+# pm_static.yml
+#mbr:
+#  address: 0x0
+#  size: 0x1000
+
+#app:
+#  address: 0x1000
+#  size: 0xdf000 # Ends at 0xE0000
+
+# Define the existing nRF52840 dongle bootloader area so the
+# partition manager doesn't use it.
+nrf5_bootloader:
+  address: 0xe0000
+  size: 0x20000 # Covers bootloader and settings up to 0x100000

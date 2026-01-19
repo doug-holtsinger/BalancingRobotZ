@@ -38,6 +38,7 @@ public:
         }
 
         fs.offset = NVS_PARTITION_OFFSET;
+	LOG_INF("NVS offset 0x%lx", fs.offset);
         rc = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
         if (rc) {
             LOG_ERR("Flash can't get page info: %d", rc);
