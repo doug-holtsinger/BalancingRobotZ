@@ -55,9 +55,8 @@ properties:
 
       - 0 # LSM6DSO_DT_XL_HP_MODE
       - 1 # LSM6DSO_DT_XL_LP_NORMAL_MODE
-      - 2 # LSM6DSO_DT_XL_ULP_MODE
 
-    enum: [0, 1, 2]
+    enum: [0, 1]
 
   accel-range:
     type: int
@@ -90,9 +89,8 @@ properties:
       - 8  # LSM6DSO_DT_ODR_1667Hz
       - 9  # LSM6DSO_DT_ODR_3333Hz
       - 10 # LSM6DSO_DT_ODR_6667Hz
-      - 11 # LSM6DSO_DT_ODR_1Hz6
 
-    enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
   gyro-pm:
     type: int
@@ -146,3 +144,32 @@ properties:
     description: |
       Selects the pulsed mode for data-ready interrupt when enabled,
       and the latched mode when disabled.
+
+  accel-lpf2-enable:
+    type: boolean
+    description: |
+      Enables the LPF2 (Low Pass Filter2)
+
+  input-composite:
+    type: int
+    default: 0
+    description: |
+      Specify the input_composite settings when accel_lpf2-enable is enabled.
+      - 0  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_50 
+      - 1  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_100
+      - 2  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_9
+      - 3  # LSM6DS3TR_C_XL_LOW_LAT_LP_ODR_DIV_400
+      - 4  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_50
+      - 5  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_100
+      - 6  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_9
+      - 7  # LSM6DS3TR_C_XL_LOW_NOISE_LP_ODR_DIV_400
+    enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+

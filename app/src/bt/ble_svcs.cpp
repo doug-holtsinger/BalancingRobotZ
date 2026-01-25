@@ -98,6 +98,18 @@ struct bt_nus_cb nus_listener = {
     .received = received,
 };
 
+static void start_adv(void)
+{
+    int err;
+
+    err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_2, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+    if (err != 0) 
+    {
+        LOG_ERR("Advertising failed to start (err %d)", err);
+        return;
+    }
+}
+
 int ble_svcs_init(void)
 {
     int err = 0;
@@ -109,6 +121,7 @@ int ble_svcs_init(void)
     static struct bt_conn_cb conn_callbacks = {
         .connected    = connected,
         .disconnected = disconnected,
+        .recycled = start_adv,
     };
 
     err = bt_nus_cb_register(&nus_listener, NULL);
@@ -125,14 +138,11 @@ int ble_svcs_init(void)
         return err;
     }
 
-#if 0
-    //DSH4
     err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_2, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     if (err) {
         LOG_ERR("Failed to start advertising: %d\n", err);
         return err;
     }
-#endif
 
     LOG_DBG("init complete\n");
 

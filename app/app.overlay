@@ -33,14 +33,14 @@
 };
 
 &lsm6ds3 {
-    accel_pm = <0>;
-    accel_range = <0>;
-    accel_odr = <6>;
-    accel_lpf2_enable; 
-    gyro_pm = <0>;
-    gyro_range = <1>;
-    gyro_odr = <6>;
-    input_composite = <4>;
+    accel-pm = <0>;
+    accel-range = <0>;
+    accel-odr = <6>;
+    accel-lpf2-enable;
+    gyro-pm = <0>;
+    gyro-range = <1>;
+    gyro-odr = <6>;
+    input-composite = <4>;
 };
 
 /delete-node/ &uart0;

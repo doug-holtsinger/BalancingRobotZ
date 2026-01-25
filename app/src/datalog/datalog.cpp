@@ -59,36 +59,36 @@ void datalog_dump()
         switch (arr[i].record_type)
         {
             case DATALOG_ACCEL_UNCAL_RECORD:
-                        LOG_DBG("%u,%d,%hd,%hd,%hd", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%hd,%hd,%hd", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 arr[i].u.accel_uncalibrated[0],
                                 arr[i].u.accel_uncalibrated[1],
                                 arr[i].u.accel_uncalibrated[2]);
                 break;
             case DATALOG_GYRO_UNCAL_RECORD:
-                        LOG_DBG("%u,%d,%d,%d,%d", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%d,%d,%d", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 arr[i].u.gyro_uncalibrated[0],
                                 arr[i].u.gyro_uncalibrated[1],
                                 arr[i].u.gyro_uncalibrated[2]);
                 break;
             case DATALOG_ACCEL_CAL_RECORD:
-                        LOG_DBG("%u,%d,%d,%d,%d", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%d,%d,%d", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 arr[i].u.accel_calibrated[0],
                                 arr[i].u.accel_calibrated[1],
                                 arr[i].u.accel_calibrated[2]);
                 break;
             case DATALOG_GYRO_CAL_RECORD:
-                        LOG_DBG("%u,%d,%f,%f,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f,%f,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.gyro_calibrated[0],
                                 (double)arr[i].u.gyro_calibrated[1],
                                 (double)arr[i].u.gyro_calibrated[2]);
                 break;
             case DATALOG_QUAT_RECORD:
-                        LOG_DBG("%u,%d,%f,%f,%f,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f,%f,%f,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.quaternion[0],
                                 (double)arr[i].u.quaternion[1],
                                 (double)arr[i].u.quaternion[2],
@@ -96,46 +96,46 @@ void datalog_dump()
 				);
                 break;
             case DATALOG_EULER_ANGLES_RECORD:
-                        LOG_DBG("%u,%d,%f,%f,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f,%f,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.euler_angle[0],
                                 (double)arr[i].u.euler_angle[1],
                                 (double)arr[i].u.euler_angle[2]);
                 break;
 	    case DATALOG_PID_KP_RECORD:
-                        LOG_DBG("%u,%d,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.pid_kp);
                 break;
 	    case DATALOG_PID_KI_RECORD:
-                        LOG_DBG("%u,%d,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.pid_ki);
                 break;
 	    case DATALOG_PID_KD_RECORD:
-                        LOG_DBG("%u,%d,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.pid_kd);
                 break;
 
 	    case DATALOG_ROLL:
-                        LOG_DBG("%u,%d,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.roll);
                 break;
 	    case DATALOG_WHEEL_SPEED:
-                        LOG_DBG("%u,%d,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.wheel_speed);
                 break;
 	    case DATALOG_SPEED_CONTROL_SP:
-                        LOG_DBG("%u,%d,%f", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 (double)arr[i].u.speed_control_sp);
                 break;
             case DATALOG_MOTOR_RECORD:
-                        LOG_DBG("%u,%d,%hd", arr[i].timestamp, 
-                                arr[i].record_type,
+                        LOG_DBG("%u,%u,%hd", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
                                 arr[i].u.motor_driver);
                 break;
         }
