@@ -3,6 +3,9 @@
 
 #define DATALOG_ENABLED
 
+#define DATALOG_ARRAY_SIZE 8192
+#define DATALOG_SLEEP_TIME_MS 100
+
 typedef enum
 {
 	DATALOG_MAIN_THREAD,
@@ -18,13 +21,16 @@ typedef enum
 	DATALOG_GYRO_CAL_RECORD,      // 3
 	DATALOG_QUAT_RECORD,          // 4
 	DATALOG_EULER_ANGLES_RECORD,  // 5
-	DATALOG_PID_KP_RECORD,        // 6
-	DATALOG_PID_KI_RECORD,        // 7
-	DATALOG_PID_KD_RECORD,        // 8
-	DATALOG_ROLL,                 // 9
-	DATALOG_WHEEL_SPEED,          // 10
-	DATALOG_SPEED_CONTROL_SP,     // 11
-	DATALOG_MOTOR_RECORD          // 12
+	DATALOG_MOTOR_PID_KP_RECORD,        // 6
+	DATALOG_MOTOR_PID_KI_RECORD,        // 7
+	DATALOG_MOTOR_PID_KD_RECORD,        // 8
+	DATALOG_SPEED_PID_KP_RECORD,        // 9
+	DATALOG_SPEED_PID_KI_RECORD,        // 10
+	DATALOG_SPEED_PID_KD_RECORD,        // 11
+	DATALOG_ROLL,                 // 12
+	DATALOG_WHEEL_SPEED,          // 13
+	DATALOG_SPEED_CONTROL_SP,     // 14
+	DATALOG_MOTOR_RECORD          // 15
 } DATALOG_RECORD_t;
 
 void datalog_stop_collection();

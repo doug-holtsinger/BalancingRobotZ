@@ -94,10 +94,10 @@ void wheel_update_work_handler(struct k_work *work)
     //timer_current = sys_clock_cycle_get_64();
     time_interval = (float)(timer_current - timer_last) / CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC;
 
-    /* get the current rotation in degrees */
+    /* get the current rotation in degrees since the last call */
     rotation = qdec.get_rotation_cumulative();
 
-    if (timer_last != 0 && timer_current != timer_last) 
+    if (timer_last != 0 && timer_current != timer_last)
     {
 	wheel_speed_encoder = rotation / (time_interval * DEGREES_PER_RADIAN);
     }

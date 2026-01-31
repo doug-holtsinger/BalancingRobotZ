@@ -22,11 +22,12 @@ extern "C" {
     {
         int rc = 0;
         struct sensor_value qdec_sens;
+	static int cnt = 0;
         ARG_UNUSED(trigger);
 
-#if 0
+#if 1
         rc = sensor_sample_fetch_chan(dev, SENSOR_CHAN_ROTATION);
-        if (rc)
+        if (rc && rc != -EOVERFLOW)
         {
             LOG_ERR("Unable to fetch QDEC samples");
 	    return;
@@ -43,8 +44,11 @@ extern "C" {
 	rotation = sensor_value_to_float(&qdec_sens);
 	rotation_cumulative += rotation;
 #if 0
-        LOG_DBG("qdec val1 %d val2 %d rot %f crot %f\n", qdec_sens.val1, qdec_sens.val2, 
+	if ((cnt++ & 0x1F) == 0)
+	{
+            LOG_DBG("qdec val1 %d val2 %d rot %f crot %f\n", qdec_sens.val1, qdec_sens.val2, 
 			(double)rotation, (double)rotation_cumulative);
+	}
 
 #endif
     }

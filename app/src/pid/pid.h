@@ -228,7 +228,12 @@ class PID {
 	    if (pidNum == MOTOR_PID_NUM)
 	    {
                 controlSetFloatContrib = controlSetFloat;
-                datalog_record(DATALOG_PID_KP_RECORD, &controlSetFloatContrib, nullptr);
+                datalog_record(DATALOG_MOTOR_PID_KP_RECORD, &controlSetFloatContrib, nullptr);
+	    }
+	    if (pidNum == SPEED_PID_NUM)
+	    {
+                controlSetFloatContrib = controlSetFloat;
+                datalog_record(DATALOG_SPEED_PID_KP_RECORD, &controlSetFloatContrib, nullptr);
 	    }
 #endif
 	    //
@@ -245,7 +250,12 @@ class PID {
             if (pidNum == MOTOR_PID_NUM)
             {
 	        controlSetFloatContrib = controlSetFloat - controlSetFloatContrib;
-                datalog_record(DATALOG_PID_KI_RECORD, &controlSetFloatContrib, nullptr);
+                datalog_record(DATALOG_MOTOR_PID_KI_RECORD, &controlSetFloatContrib, nullptr);
+            }
+            if (pidNum == SPEED_PID_NUM)
+            {
+	        controlSetFloatContrib = controlSetFloat - controlSetFloatContrib;
+                datalog_record(DATALOG_SPEED_PID_KI_RECORD, &controlSetFloatContrib, nullptr);
             }
             controlSetFloatContrib = controlSetFloat;
 #endif
@@ -263,7 +273,12 @@ class PID {
             if (pidNum == MOTOR_PID_NUM)
             {
                 controlSetFloatContrib = controlSetFloat - controlSetFloatContrib;
-                datalog_record(DATALOG_PID_KD_RECORD, &controlSetFloatContrib, nullptr);
+                datalog_record(DATALOG_MOTOR_PID_KD_RECORD, &controlSetFloatContrib, nullptr);
+	    }
+            if (pidNum == SPEED_PID_NUM)
+            {
+                controlSetFloatContrib = controlSetFloat - controlSetFloatContrib;
+                datalog_record(DATALOG_SPEED_PID_KD_RECORD, &controlSetFloatContrib, nullptr);
 	    }
 #endif
 

@@ -110,6 +110,18 @@ static void start_adv(void)
     }
 }
 
+void stop_adv(void)
+{
+    int err;
+
+    err = bt_le_adv_stop();
+    if (err != 0)
+    {
+        LOG_ERR("Advertising failed to stop (err %d)", err);
+        return;
+    }
+}
+
 int ble_svcs_init(void)
 {
     int err = 0;

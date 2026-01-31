@@ -8,9 +8,6 @@
 #ifdef DATALOG_ENABLED
 LOG_MODULE_REGISTER(DATALOG, CONFIG_SENSOR_LOG_LEVEL);
 
-#define DATALOG_ARRAY_SIZE 8192
-#define SLEEP_TIME_MS 100
-
 typedef struct {
         int32_t timestamp;
         union {
@@ -20,9 +17,12 @@ typedef struct {
             float gyro_calibrated[3];
             float quaternion[4];
             float euler_angle[3];
-            float pid_kp;
-            float pid_ki;
-            float pid_kd;
+            float motor_pid_kp;
+            float motor_pid_ki;
+            float motor_pid_kd;
+            float speed_pid_kp;
+            float speed_pid_ki;
+            float speed_pid_kd;
 	    float roll;
 	    float wheel_speed;
 	    float speed_control_sp;
@@ -102,22 +102,38 @@ void datalog_dump()
                                 (double)arr[i].u.euler_angle[1],
                                 (double)arr[i].u.euler_angle[2]);
                 break;
-	    case DATALOG_PID_KP_RECORD:
+
+	    case DATALOG_MOTOR_PID_KP_RECORD:
                         LOG_DBG("%u,%u,%f", arr[i].timestamp,
                                 (uint32_t)arr[i].record_type,
-                                (double)arr[i].u.pid_kp);
+                                (double)arr[i].u.motor_pid_kp);
                 break;
-	    case DATALOG_PID_KI_RECORD:
+	    case DATALOG_MOTOR_PID_KI_RECORD:
                         LOG_DBG("%u,%u,%f", arr[i].timestamp,
                                 (uint32_t)arr[i].record_type,
-                                (double)arr[i].u.pid_ki);
+                                (double)arr[i].u.motor_pid_ki);
                 break;
-	    case DATALOG_PID_KD_RECORD:
+	    case DATALOG_MOTOR_PID_KD_RECORD:
                         LOG_DBG("%u,%u,%f", arr[i].timestamp,
                                 (uint32_t)arr[i].record_type,
-                                (double)arr[i].u.pid_kd);
+                                (double)arr[i].u.motor_pid_kd);
                 break;
 
+	    case DATALOG_SPEED_PID_KP_RECORD:
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
+                                (double)arr[i].u.speed_pid_kp);
+                break;
+	    case DATALOG_SPEED_PID_KI_RECORD:
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
+                                (double)arr[i].u.speed_pid_ki);
+                break;
+	    case DATALOG_SPEED_PID_KD_RECORD:
+                        LOG_DBG("%u,%u,%f", arr[i].timestamp,
+                                (uint32_t)arr[i].record_type,
+                                (double)arr[i].u.speed_pid_kd);
+                break;
 	    case DATALOG_ROLL:
                         LOG_DBG("%u,%u,%f", arr[i].timestamp,
                                 (uint32_t)arr[i].record_type,
@@ -139,22 +155,23 @@ void datalog_dump()
                                 arr[i].u.motor_driver);
                 break;
         }
-        k_msleep(SLEEP_TIME_MS);
+        k_msleep(DATALOG_SLEEP_TIME_MS);
+	k_yield();
     }
 }
 
 void datalog_record(DATALOG_RECORD_t record_type, float *record, int32_t *recordi)
 {
-	if (trigger_dump)
+	if (stop_collection)
 	{
-	    datalog_dump();
-            datalog_stop_collection();
-	    trigger_dump = false;
 	    return;
         }
 
-	if (stop_collection)
+	if (trigger_dump)
 	{
+            datalog_stop_collection();
+	    datalog_dump();
+	    trigger_dump = false;
 	    return;
         }
 
@@ -198,14 +215,23 @@ void datalog_record(DATALOG_RECORD_t record_type, float *record, int32_t *record
                     arr[datalog_idx].u.euler_angle[j] = record[j];
                 }
                 break;
-	    case DATALOG_PID_KP_RECORD:
-                arr[datalog_idx].u.pid_kp = *record;
+	    case DATALOG_MOTOR_PID_KP_RECORD:
+                arr[datalog_idx].u.motor_pid_kp = *record;
 		break;
-	    case DATALOG_PID_KI_RECORD:
-                arr[datalog_idx].u.pid_ki = *record;
+	    case DATALOG_MOTOR_PID_KI_RECORD:
+                arr[datalog_idx].u.motor_pid_ki = *record;
 		break;
-	    case DATALOG_PID_KD_RECORD:
-                arr[datalog_idx].u.pid_kd = *record;
+	    case DATALOG_MOTOR_PID_KD_RECORD:
+                arr[datalog_idx].u.motor_pid_kd = *record;
+		break;
+	    case DATALOG_SPEED_PID_KP_RECORD:
+                arr[datalog_idx].u.speed_pid_kp = *record;
+		break;
+	    case DATALOG_SPEED_PID_KI_RECORD:
+                arr[datalog_idx].u.speed_pid_ki = *record;
+		break;
+	    case DATALOG_SPEED_PID_KD_RECORD:
+                arr[datalog_idx].u.speed_pid_kd = *record;
 		break;
 	    case DATALOG_ROLL:
                 arr[datalog_idx].u.roll = *record;
