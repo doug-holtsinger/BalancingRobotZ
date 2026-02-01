@@ -29,13 +29,23 @@ cd BalancingRobotZ
 west update
 ```
 
+Install the Nordic Semiconductor utility "nrfutil":\
+https://www.nordicsemi.com/Products/Development-tools/nRF-Util
+
+Install the nRF Connect for Desktop:\
+https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-desktop/download
+
 Command to build the Zephyr application (in br_app directory):
 ```
 source zephyr/zephyr-env.sh
-nrfutil toolchain-manager launch --ncs-version v3.0.2 --shell
+nrfutil toolchain-manager launch --shell
 cd BalancingRobotZ
 ./build.sh
 ```
+
+Program the Device using the Programmer in the nRF Connect for Desktop.  I installed the Nordic Open DFU bootloader. 
+
+https://docs.nordicsemi.com/bundle/sdk_nrf5_v17.1.0/page/ble_sdk_app_open_bootloader.html 
 
 ## Hardware Requirements
 
@@ -62,6 +72,10 @@ I used this 5V miniboost board to power the 6V motors from a 3.7V LiPo battery.
 ### Software Installation for Python Control Program on Raspberry Pi5 (Bullseye)
 
 ```
+# Make python virtual environment
+python -m venv ./venv
+cd venv
+source bin/activate
 # Update OS
 sudo apt update
 sudo apt upgrade
@@ -90,6 +104,18 @@ pip3 install --force-reinstall "PyOpenGL==3.1.5"
 # To get around problem:
 # https://github.com/IanHarvey/bluepy/issues/218
 sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+```
+
+### Python Control Program Installation and Invocation
+
+```
+# activate python virtual environment
+cd venv
+source bin/activate
+# clone program
+git clone https://github.com/doug-holtsinger/WirelessSensor 
+cd WirelessSensor/Compute/src/AHRS-VISUAL
+./ahrs-console.py
 ```
 
 ### Calibration and Control GUI on the Raspberry Pi
