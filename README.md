@@ -29,8 +29,11 @@ cd BalancingRobotZ
 west update
 ```
 
-Command to build the Zephyr application (in BalancingRobotZ directory):
+Command to build the Zephyr application (in br_app directory):
 ```
+source zephyr/zephyr-env.sh
+nrfutil toolchain-manager launch --ncs-version v3.0.2 --shell
+cd BalancingRobotZ
 ./build.sh
 ```
 
@@ -58,68 +61,34 @@ I used this 5V miniboost board to power the 6V motors from a 3.7V LiPo battery.
 
 ### Software Installation for Python Control Program on Raspberry Pi5 (Bullseye)
 
-Update OS
 ```
+# Update OS
 sudo apt update
 sudo apt upgrade
-```
-
-Install bluez
-```
+# Install bluez
 sudo apt-get install bluez
-```
-
-Install pip for python3.10
-```
+# Install pip for python3.10
 sudo apt-get install python3-pip
-```
-
-Install glib
-```
+# Install glib
 sudo apt-get install libglib2.0-dev
-```
-
-Install bluepy
-```
+# Install bluepy
 pip install bluepy
-```
-
-Install tkinter
-```
+# Install tkinter
 sudo apt-get install python3-tk
-```
-
-Install matplotlib
-```
+# Install matplotlib
 pip install matplotlib
-```
-
-Install PyOpenGL
-```
+# Install PyOpenGL
 sudo apt install python3-opengl
 pip3 install PyOpenGL
-```
-
-Install pyopengltk
-```
+# Install pyopengltk
 pip install pyopengltk
-```
-
-Workaround for PyOpenGL error:
-
-```
-AttributeError: 'EGLPlatform' object has no attribute 'GLX'. Did you mean: 'GL'?\
-
+# Workaround for PyOpenGL error:
+# AttributeError: 'EGLPlatform' object has no attribute 'GLX'. Did you mean: 'GL'?
 unset WAYLAND_DISPLAY
-
-or
-
+# or
 pip3 install --force-reinstall "PyOpenGL==3.1.5"
-```
-
-To get around problem:
-```
-https://github.com/IanHarvey/bluepy/issues/218
+# To get around problem:
+# https://github.com/IanHarvey/bluepy/issues/218
 sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
 ```
 
