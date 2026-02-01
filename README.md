@@ -13,109 +13,140 @@ The nRF52840 microcontroller performs sensor fusion in software to support an IM
 Here is a video of the self-balancing robot in action:\
 https://www.youtube.com/shorts/mzc14pLCrEc
 
+![Here is a screenshot of the Python Control Program:](https://github.com/doug-holtsinger/BalancingRobotZ/tree/main/doc/AHRSGui.png)
+
 ## Software Checkout and Build
 
 The Software development and build platform is an x86 Windows PC running Windows WSL (Windows Subsystem for Linux), using Ubuntu TLS 22.04.04 LTS. 
 
 Commands to create the Workspace on Linux:
 
-mkdir -p br_app\
-cd br_app\
-west init -m https://github.com/doug-holtsinger/BalancingRobotZ\
-cd BalancingRobotZ\
-west update\
+```
+mkdir -p br_app
+cd br_app
+west init -m https://github.com/doug-holtsinger/BalancingRobotZ
+cd BalancingRobotZ
+west update
+```
 
-Command to build the Zephyr application (in BalancingRobotZ directory):\
+Command to build the Zephyr application (in BalancingRobotZ directory):
+```
 ./build.sh
+```
 
-# Hardware Requirements
+## Hardware Requirements
 
-## Parts List
+### Parts List
 
-1. [Nordic Semiconductor nRF52840 Dongle](https://www.mouser.com/ProductDetail/949-NRF52840-DONGLE)\
-2. [Adafruit LSM6DS3TR-C + LIS3MDL - Precision 9 DoF IMU](https://www.adafruit.com/product/5543)\
-3. [Pololu DRV8835 Dual Motor Driver Carrier](https://www.pololu.com/product/2135)\
-4. [Adafruit N20 DC Motor with Magnetic Encoder - 6V with 1:50 Gear Ratio](https://www.adafruit.com/product/4638)\
-Note: I used a set of motors and encoders from this M5Stack Bala2 self-balancing robot with a 1:30 Gear Ratio:\
-https://shop.m5stack.com/products/bala2-fire-self-balancing-robot-kit\
-Only a single wheel encoder is supported on the nRF52840 microcontroller.\
-5. [Adafruit MiniBoost 5V @ 1A - TPS61023](https://www.adafruit.com/product/4654)\
-I used this 5V miniboost board to power the 6V motors from a 3.7V LiPo battery.\
-6. LiPo Battery, 3.7V\
-7. Various wires/connectors/cables.\
-8. Mechanical parts for robot.\
-9. (Optional) SEGGER J-Link Debugger for nRF52840, provides support for Serial Console and Debug\
+1. [Nordic Semiconductor nRF52840 Dongle](https://www.mouser.com/ProductDetail/949-NRF52840-DONGLE)
+2. [Adafruit LSM6DS3TR-C + LIS3MDL - Precision 9 DoF IMU](https://www.adafruit.com/product/5543)
+3. [Pololu DRV8835 Dual Motor Driver Carrier](https://www.pololu.com/product/2135)
+4. [Adafruit N20 DC Motor with Magnetic Encoder - 6V with 1:50 Gear Ratio](https://www.adafruit.com/product/4638)
+Note: I used a set of motors and encoders from this M5Stack Bala2 self-balancing robot with a 1:30 Gear Ratio:
+https://shop.m5stack.com/products/bala2-fire-self-balancing-robot-kit
+Only a single wheel encoder is supported on the nRF52840 microcontroller.
+5. [Adafruit MiniBoost 5V @ 1A - TPS61023](https://www.adafruit.com/product/4654)
+I used this 5V miniboost board to power the 6V motors from a 3.7V LiPo battery.
+6. LiPo Battery, 3.7V
+7. Various wires/connectors/cables.
+8. Mechanical parts for robot.
+9. (Optional) SEGGER J-Link Debugger for nRF52840, provides support for Serial Console and Debug
 
-## Hardware Circuit Diagram
+### Hardware Circuit Diagram
 
-# Software Requirements
+## Software Requirements
 
-## Software Installation for Python Control Program on Raspberry Pi5 (Bullseye)
+### Software Installation for Python Control Program on Raspberry Pi5 (Bullseye)
 
-# Update OS\
-sudo apt update\
-sudo apt upgrade\
+Update OS
+```
+sudo apt update
+sudo apt upgrade
+```
 
-# Install bluez\
-sudo apt-get install bluez\
+Install bluez
+```
+sudo apt-get install bluez
+```
 
-# Install pip for python3.10\
-sudo apt-get install python3-pip\
+Install pip for python3.10
+```
+sudo apt-get install python3-pip
+```
 
-# Install glib\
-sudo apt-get install libglib2.0-dev\
+Install glib
+```
+sudo apt-get install libglib2.0-dev
+```
 
-# Install bluepy\
-pip install bluepy\
+Install bluepy
+```
+pip install bluepy
+```
 
-# Install tkinter\
-sudo apt-get install python3-tk\
+Install tkinter
+```
+sudo apt-get install python3-tk
+```
 
-# Install matplotlib\
-pip install matplotlib\
+Install matplotlib
+```
+pip install matplotlib
+```
 
-# Install PyOpenGL\
-sudo apt install python3-opengl\
-pip3 install PyOpenGL\
+Install PyOpenGL
+```
+sudo apt install python3-opengl
+pip3 install PyOpenGL
+```
 
-# Install pyopengltk\
-pip install pyopengltk\
+Install pyopengltk
+```
+pip install pyopengltk
+```
 
-# Workaround for PyOpenGL error:\
+Workaround for PyOpenGL error:
+
+```
 AttributeError: 'EGLPlatform' object has no attribute 'GLX'. Did you mean: 'GL'?\
 
-unset WAYLAND_DISPLAY\
-or\
-pip3 install --force-reinstall "PyOpenGL==3.1.5"\
+unset WAYLAND_DISPLAY
 
-# to get around problem:\
-#  https://github.com/IanHarvey/bluepy/issues/218\
-sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper\
+or
 
-## Calibration and Control GUI on the Raspberry Pi
+pip3 install --force-reinstall "PyOpenGL==3.1.5"
+```
 
-## Calibration Procedure
+To get around problem:
+```
+https://github.com/IanHarvey/bluepy/issues/218
+sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
+```
 
-## 3D Orientation Visualization on the Raspberry Pi
+### Calibration and Control GUI on the Raspberry Pi
 
-# Remaining Improvements:
-1. Refine AHRS calibration\
-   - Improve calibration algorithm for accelerometer\
-   - remove fixed constants\
-   - require less operator intervention to do calibration\
-   - Angles take a while to stabilize\
-   - add support for setting hardware register configuration bits\
-2. Fix singularity at North and South Poles, can't get to 90 degree pitch (gimbal lock)\
-3. Further testing\
-4. BLE code\
-   - DFU Over the Air Updates\
-   - Improve performance, being aware of battery life\
-5. Add Doyxgen documentation for all code, procedures, and parameters\
-6. Add circuit schematic\
-7. Add general documentation on the project, algorithms, calibration\
-8. Develop Mechanical Test fixture to hold board and measure actual orientation to compare against calculated orientation.\
-9. Improve Calibration and Control GUI\
-10. Look at adding support for Visual Studio Code\
-11. On Server side, look at adding support for Arduino\
-12. On Client side, look at adding Android support\
+### Calibration Procedure
+
+### 3D Orientation Visualization on the Raspberry Pi
+
+## Remaining Improvements:
+1. Refine AHRS calibration
+   - Improve calibration algorithm for accelerometer
+   - remove fixed constants
+   - require less operator intervention to do calibration
+   - Angles take a while to stabilize
+   - add support for setting hardware register configuration bits
+2. Fix singularity at North and South Poles, can't get to 90 degree pitch (gimbal lock)
+3. Further testing
+4. BLE code
+   - DFU Over the Air Updates
+   - Improve performance, being aware of battery life
+5. Add Doyxgen documentation for all code, procedures, and parameters
+6. Add circuit schematic
+7. Add general documentation on the project, algorithms, calibration
+8. Develop Mechanical Test fixture to hold board and measure actual orientation to compare against calculated orientation.
+9. Improve Calibration and Control GUI
+10. Look at adding support for Visual Studio Code
+11. On Server side, look at adding support for Arduino
+12. On Client side, look at adding Android support
 
