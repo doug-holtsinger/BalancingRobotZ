@@ -13,7 +13,7 @@ The nRF52840 microcontroller performs sensor fusion in software to support an IM
 Here is a video of the self-balancing robot in action:\
 https://www.youtube.com/shorts/mzc14pLCrEc
 
-![Here is a screenshot of the Python Control Program:](https://github.com/doug-holtsinger/BalancingRobotZ/tree/main/doc/AHRSGui.png)
+[Here is a screenshot of the Python Control Program](https://github.com/doug-holtsinger/BalancingRobotZ/tree/main/doc/AHRSGui.png)
 
 ## Software Checkout and Build
 
@@ -112,6 +112,35 @@ sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
 # activate python virtual environment
 cd venv
 source bin/activate
+```
+
+```
+# clone program into separate area
+git clone https://github.com/doug-holtsinger/WirelessSensor 
+cd WirelessSensor/Compute/src/AHRS-VISUAL
+./ahrs-console.py
+```
+
+### Calibration and Control GUI on the Raspberry Pi
+
+### Calibration Procedure
+
+### 3D Orientation Visualization on the Raspberry Pi
+
+=======
+# clone program
+git clone https://github.com/doug-holtsinger/WirelessSensor 
+cd WirelessSensor/Compute/src/AHRS-VISUAL
+./ahrs-console.py
+```
+
+### Calibration and Control GUI on the Raspberry Pi
+
+### Calibration Procedure
+
+### 3D Orientation Visualization on the Raspberry Pi
+
+=======
 # clone program
 git clone https://github.com/doug-holtsinger/WirelessSensor 
 cd WirelessSensor/Compute/src/AHRS-VISUAL
