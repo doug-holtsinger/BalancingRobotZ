@@ -13,7 +13,8 @@ The nRF52840 microcontroller performs sensor fusion in software to support an IM
 Here is a video of the self-balancing robot in action:\
 https://www.youtube.com/shorts/mzc14pLCrEc
 
-[Here is a screenshot of the Python Control Program](https://github.com/doug-holtsinger/BalancingRobotZ/tree/main/doc/AHRSGui.png)
+Here is a screenshot of the Python Control Program:\
+https://github.com/doug-holtsinger/BalancingRobotZ/tree/main/doc/AHRSGui.png
 
 ## Software Checkout and Build
 
