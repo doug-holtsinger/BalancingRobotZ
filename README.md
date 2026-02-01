@@ -127,32 +127,6 @@ cd WirelessSensor/Compute/src/AHRS-VISUAL
 
 ### 3D Orientation Visualization on the Raspberry Pi
 
-=======
-# clone program
-git clone https://github.com/doug-holtsinger/WirelessSensor 
-cd WirelessSensor/Compute/src/AHRS-VISUAL
-./ahrs-console.py
-```
-
-### Calibration and Control GUI on the Raspberry Pi
-
-### Calibration Procedure
-
-### 3D Orientation Visualization on the Raspberry Pi
-
-=======
-# clone program
-git clone https://github.com/doug-holtsinger/WirelessSensor 
-cd WirelessSensor/Compute/src/AHRS-VISUAL
-./ahrs-console.py
-```
-
-### Calibration and Control GUI on the Raspberry Pi
-
-### Calibration Procedure
-
-### 3D Orientation Visualization on the Raspberry Pi
-
 ## Remaining Improvements:
 1. Refine AHRS calibration
    - Improve calibration algorithm for accelerometer
